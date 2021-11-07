@@ -5,6 +5,8 @@ library(tidyverse)
 library(rvest)
 library(data.table)
 library(RCurl)
+library(httr)
+
 
 
 # https://graphfundamentals.com/graphfundamentals/AAPL/IS#
@@ -13,6 +15,9 @@ scrape_fundamentals <- function(ticker) {
     
     #####
     # ticker <- "SOFI"
+    # ticker <- "AAAA"
+    # ticker <- "AAC"
+    # ticker <- "AACQ"
     # ticker <- "sdfddsfd"
     #####
     
@@ -24,6 +29,8 @@ scrape_fundamentals <- function(ticker) {
     
     cf_url <- paste0("https://graphfundamentals.com/graphfundamentals/",
                      str_to_upper(ticker), "/CF#")
+    
+    if(status_code(GET(bs_url)) == 500) return(NA)
     
     test_url <- read_html(bs_url)
     page_ticker <- test_url %>% 
@@ -41,6 +48,8 @@ scrape_fundamentals <- function(ticker) {
         as_tibble(.name_repair = make.names) %>% 
         .[, colSums(is.na(.)) < nrow(.)] %>% 
         rename(field = X) %>% 
+        mutate(across(-field, ~str_remove_all(.x, ","))) %>% 
+        mutate(across(-field, as.numeric)) %>% 
         pivot_longer(-field, names_to = "date", values_to = "value") %>% 
         pivot_wider(names_from = field, values_from = value) %>% 
         janitor::clean_names() %>% 
@@ -54,6 +63,8 @@ scrape_fundamentals <- function(ticker) {
         as_tibble(.name_repair = make.names) %>% 
         .[, colSums(is.na(.)) < nrow(.)] %>% 
         rename(field = X) %>% 
+        mutate(across(-field, ~str_remove_all(.x, ","))) %>% 
+        mutate(across(-field, as.numeric)) %>% 
         pivot_longer(-field, names_to = "date", values_to = "value") %>% 
         pivot_wider(names_from = field, values_from = value) %>% 
         janitor::clean_names() %>% 
@@ -66,6 +77,8 @@ scrape_fundamentals <- function(ticker) {
         as_tibble(.name_repair = make.names) %>% 
         .[, colSums(is.na(.)) < nrow(.)] %>% 
         rename(field = X) %>% 
+        mutate(across(-field, ~str_remove_all(.x, ","))) %>% 
+        mutate(across(-field, as.numeric)) %>% 
         pivot_longer(-field, names_to = "date", values_to = "value") %>% 
         pivot_wider(names_from = field, values_from = value) %>% 
         janitor::clean_names() %>% 
@@ -96,15 +109,19 @@ save_fundamentals <- function(tickers) {
         #####
         # ticker <- "DFDSE"
         #####
+        print(ticker)
         
         fundamentals <- scrape_fundamentals(ticker)
+        if(is.na(fundamentals)) next
         
         fwrite(fundamentals$balance_sheet, 
                paste0(dir_w, ticker, " - balance_sheet ", download_date, ".csv"))
         fwrite(fundamentals$income_statement, 
                paste0(dir_w, ticker, " - income_statement ", download_date, ".csv"))
         fwrite(fundamentals$cash_flows, 
-               paste0(dir_w, ticker, " - cash_flows ", download_date, ".csv"))        
+               paste0(dir_w, ticker, " - cash_flows ", download_date, ".csv"))
+        
+        Sys.sleep(3)
     }
 }
 
@@ -113,10 +130,10 @@ save_fundamentals <- function(tickers) {
 tickers_with_clean_prices <- 
     read_lines("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/data/cleaned data/tickers_with_clean_prices.txt")
 
-tickers <- tickers_with_clean_prices[1:100]
+tickers <- tickers_with_clean_prices[7:100]
 
+save_fundamentals(tickers = tickers)
 
-tickers <- c("AAPL", "HD", "BBY")
 
 
 
