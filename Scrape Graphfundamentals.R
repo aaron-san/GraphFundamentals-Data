@@ -18,6 +18,7 @@ scrape_fundamentals <- function(ticker) {
     # ticker <- "AAAA"
     # ticker <- "AAC"
     # ticker <- "AACQ"
+    # ticker <- "AAON"
     # ticker <- "sdfddsfd"
     #####
     
@@ -36,10 +37,12 @@ scrape_fundamentals <- function(ticker) {
     page_ticker <- test_url %>% 
         xml_nodes("h1.h2") %>% html_text() %>% 
         str_extract("(?<=\\()[A-Z]{1,10}(?=\\))")
+    if(is.na(page_ticker)) return(NA)
     if(ticker != page_ticker) return(NA)
     
     
     bs_page <- test_url %>% html_table()
+    if(bs_page %>% flatten() %>% as_tibble(.name_repair=make.names) %>% nrow() == 0) return(NA)
     is_page <- read_html(is_url) %>% html_table()
     cf_page <- read_html(cf_url) %>% html_table()
     
@@ -130,7 +133,7 @@ save_fundamentals <- function(tickers) {
 tickers_with_clean_prices <- 
     read_lines("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/data/cleaned data/tickers_with_clean_prices.txt")
 
-tickers <- tickers_with_clean_prices[7:100]
+tickers <- tickers_with_clean_prices[23:300]
 
 save_fundamentals(tickers = tickers)
 
