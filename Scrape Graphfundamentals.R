@@ -7,6 +7,7 @@ library(data.table)
 library(RCurl)
 library(httr)
 
+source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
 
 
 # https://graphfundamentals.com/graphfundamentals/AAPL/IS#
@@ -14,32 +15,32 @@ library(httr)
 scrape_fundamentals <- function(ticker) {
     
     #####
+    # ticker <- "A"
     # ticker <- "SOFI"
     # ticker <- "AAAA"
     # ticker <- "AAC"
     # ticker <- "AACQ"
     # ticker <- "AAON"
-    # ticker <- "BZUN"
+    # ticker <- "SOHU"
     # ticker <- "sdfddsfd"
     #####
     
-    bs_url <- paste0("https://graphfundamentals.com/graphfundamentals/",
-                  str_to_upper(ticker), "/BS#")
-    
-    is_url <- paste0("https://graphfundamentals.com/graphfundamentals/",
-                     str_to_upper(ticker), "/IS#")
-    
-    cf_url <- paste0("https://graphfundamentals.com/graphfundamentals/",
-                     str_to_upper(ticker), "/CF#")
+    base_url <- "https://graphfundamentals.com/graphfundamentals?ticker="
+    ticker_url <- paste0(base_url, str_to_upper(ticker))
+    bs_url <- paste0(ticker_url, "&sheettype=BS#")
+    is_url <- paste0(ticker_url, "&sheettype=IS#")
+    cf_url <- paste0(ticker_url, "&sheettype=CF#")
     
     # If the webpage has an error 500 message, return NA
     if(status_code(GET(bs_url)) == 500) return(NA)
+    if(status_code(GET(is_url)) == 500) return(NA)
+    if(status_code(GET(cf_url)) == 500) return(NA)
     
     test_url <- read_html(bs_url)
     # Get ticker printed on webpage
     page_ticker <- test_url %>% 
         xml_nodes("h1.h2") %>% html_text() %>% 
-        str_extract("(?<=\\()[A-Z]{1,10}(?=\\))")
+        str_extract("(?<=\\()[A-Z]{1,15}(?=\\))")
     if(is.na(page_ticker)) return(NA)
     # If the loop ticker doesn't equal the ticker on the webpage, return NA
     #  The webpage sometimes forwards to AAPL's page if the ticker link 
@@ -127,20 +128,21 @@ scrape_fundamentals <- function(ticker) {
 save_fundamentals <- function(tickers) {
     #####
     # tickers <- "HDdfd"
+    # tickers <- "SOHU"
     #####
     
-    dir_w <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/data/"
+    dir_w <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/data/raw data/"
     download_date <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
     
     for(ticker in tickers) {
         
         #####
-        # ticker <- "DFDSE"
-        # ticker <- "BZUN"
+        # ticker <- "SOHU"
         #####
         print(ticker)
         
         fundamentals <- scrape_fundamentals(ticker)
+        
         if(!is.na(fundamentals)) {
             if(!is.na(fundamentals$balance_sheet)) {
                 fwrite(fundamentals$balance_sheet, 
@@ -160,8 +162,6 @@ save_fundamentals <- function(tickers) {
             
             Sys.sleep(3)
         }
-        
-        
     }
 }
 
@@ -171,60 +171,63 @@ tickers_with_clean_prices <-
     read_lines("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/data/cleaned data/tickers_with_clean_prices.txt")
 
 
-# Get downloaded files
-fund_files <- list.files("data", 
+# Get tickers from cleaned downloaded data
+cleaned_data_files <- list.files("data/cleaned data", 
                          pattern = "balance_sheet|income_statement|cash_flow", 
                          full.names = TRUE)
+if(length(cleaned_data_files) == 0) {
+    cleaned_data_files <- 
+        unzip("data/backup/backup - 2021 11 11.zip", list = TRUE)$Name
+}
 
-tickers_in_files <- fund_files %>% str_extract("(?<=\\/)[A-Za-z]{1,20}(?= -)")
+tickers_in_files <- 
+    cleaned_data_files %>% #str_extract("(?<=\\/)[A-Za-z]{1,20}(?= -)")
+    map_df(~read_tibble(.x)) %>% 
+    distinct(ticker) %>% 
+    pull()
+
 # Proportion of tickers downloaded (at least once)
 length(tickers_in_files) / length(tickers_with_clean_prices)
 
 
-# length(tickers_with_clean_prices) # 13,763
-tickers_with_clean_prices %>% str_detect("ARPO") %>% which()
-tickers_with_clean_prices %>% str_detect("BILI") %>% which()
-tickers_with_clean_prices %>% str_detect("^H$") %>% which()
-tickers_with_clean_prices %>% str_detect("^OFIX$") %>% which()
+download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL) {
+    #######
+    # start_ticker <- NULL #"CCL"
+    # start_id <- 1 # NULL
+    # tickers <- tickers_with_clean_prices
+    #######
+    
+    if(is.null(tickers)) 
+        stop("Provide vector of tickers")
+    if(is.null(start_id) & is.null(start_ticker))
+        stop("Provide a start_id or start_ticker")
+    if(!is.null(start_id) & !is.null(start_ticker))
+        stop("Provide one of either a start_id or a start_ticker")
+    
+    if(!is.null(start_ticker)) {
+        start_ticker <- paste0("^", start_ticker, "$")
+        start_id <- tickers_with_clean_prices %>% str_which(start_ticker)
+    }
 
-# Stops at "AEHL", "ARPO" and "BILI", "OFIX", "PDD", "REDU"
-
-# [1] "OFIX"
-# Error: `cols` must select at least one column.
-# Run `rlang::last_error()` to see where the error occurred.
-# In addition: There were 50 or more warnings (use warnings() to see the first 50)
-
-
-step <- 1000
-start <- seq(from = 1, to = length(tickers_with_clean_prices), by = step)
-end <- start + step - 1
-end[length(end)] <- min(length(tickers_with_clean_prices), end[length(end)])
-
-
-start <- start[c(3, 5, 6, 7)]
-end <- end[c(3, 5, 6, 7)]
-
-# Download fundamentals
-for(i in seq_along(start)) {
-    save_fundamentals(tickers = tickers_with_clean_prices[start[i]:end[i]])
-    print(paste0(start[i], "-", end[i], " done!"))
-} 
-
-
-# Get percent downloaded per group
-tbl <- tibble(group = integer(), perc_compl = numeric())
-for(i in seq_along(start)) {
-    tickers <- tickers_with_clean_prices[start[i]:end[i]]
-    tbl_i <- tibble(group = i, perc_compl = mean(tickers %in% tickers_in_files))
-    tbl <- bind_rows(tbl, tbl_i)
+    # Download fundamentals
+    # for(i in seq_along(start)) {
+    for(i in start_id:length(tickers_with_clean_prices)) {
+        # i <- 1
+        save_fundamentals(tickers = tickers_with_clean_prices[i])
+        # print(paste0(start[i], "-", end[i], " done!"))
+    }
 }
-tbl
+
+
+# DOWNLOAD ----------------------------------------------------------------
+
+download_fundamentals(start_id = 1,
+                      # start_ticker = "VLDR",
+                      tickers = tickers_in_files)
 
 
 
 
-
-
-
-
+    
+    
 
