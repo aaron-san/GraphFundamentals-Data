@@ -7,6 +7,7 @@ library(data.table)
 library(RCurl)
 library(httr)
 
+source("helper functions.R")
 source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
 
 
@@ -15,7 +16,8 @@ source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper function
 scrape_fundamentals <- function(ticker) {
     
     #####
-    # ticker <- "A"
+    # ticker <- "MSFT"
+    # ticker <- "COP"
     # ticker <- "SOFI"
     # ticker <- "AAAA"
     # ticker <- "AAC"
@@ -25,7 +27,7 @@ scrape_fundamentals <- function(ticker) {
     # ticker <- "sdfddsfd"
     #####
     
-    base_url <- "https://graphfundamentals.com/graphfundamentals?ticker="
+    base_url <- "https://wallstreetmillennial.com/graphfundamentals?ticker="
     ticker_url <- paste0(base_url, str_to_upper(ticker))
     bs_url <- paste0(ticker_url, "&sheettype=BS#")
     is_url <- paste0(ticker_url, "&sheettype=IS#")
@@ -39,7 +41,7 @@ scrape_fundamentals <- function(ticker) {
     test_url <- read_html(bs_url)
     # Get ticker printed on webpage
     page_ticker <- test_url %>% 
-        xml_nodes("h1.h2") %>% html_text() %>% 
+        html_elements("h1.h2") %>% html_text() %>% 
         str_extract("(?<=\\()[A-Z]{1,15}(?=\\))")
     if(is.na(page_ticker)) return(NA)
     # If the loop ticker doesn't equal the ticker on the webpage, return NA
@@ -55,64 +57,59 @@ scrape_fundamentals <- function(ticker) {
     
     
     bs_tibble <- bs_page %>% flatten() %>% as_tibble(.name_repair=make.names)
+    
     if(bs_tibble %>% nrow() == 0 | bs_tibble %>% ncol() <= 2) {
         bs_df <- NA 
     } else {
         bs_df <- 
-            bs_page %>% 
-            flatten() %>% 
-            as_tibble(.name_repair = make.names) %>% 
-            .[, colSums(is.na(.)) < nrow(.)] %>% 
-            rename(field = X) %>% 
-            mutate(across(-field, ~str_remove_all(.x, ","))) %>% 
+            bs_tibble %>% 
+            select(-any_of("X")) %>% 
+            janitor::remove_empty(which = "cols") %>% 
+            rename(field = Fields) %>% 
+            # append_number_dups() %>% 
+            mutate(across(-field, ~str_remove_all(.x, ","))) %>%
             mutate(across(-field, as.numeric)) %>% 
-            pivot_longer(-field, names_to = "date", values_to = "value") %>% 
-            pivot_wider(names_from = field, values_from = value) %>% 
             janitor::clean_names() %>% 
-            mutate(date = as.Date(date, "X%Y.%m.%d")) %>% 
-            add_column(ticker = ticker) %>% 
-            select(ticker, date, everything())
+            add_column(ticker = ticker) %>%
+            select(ticker, field, everything())
     }
     
     
     is_tibble <- is_page %>% flatten() %>% as_tibble(.name_repair=make.names)
+    
     if(is_tibble %>% nrow() == 0 | is_tibble %>% ncol() <= 2) {
         is_df <- NA
     } else {
         is_df <- 
-            is_page %>% 
-            flatten() %>% 
-            as_tibble(.name_repair = make.names) %>% 
-            .[, colSums(is.na(.)) < nrow(.)] %>% 
-            rename(field = X) %>% 
+            is_tibble %>% 
+            select(-any_of("X")) %>% 
+            janitor::remove_empty(which = "cols") %>% 
+            rename(field = Fields) %>% 
+            # append_number_dups() %>% 
             mutate(across(-field, ~str_remove_all(.x, ","))) %>% 
             mutate(across(-field, as.numeric)) %>% 
-            pivot_longer(-field, names_to = "date", values_to = "value") %>% 
-            pivot_wider(names_from = field, values_from = value) %>% 
             janitor::clean_names() %>% 
-            mutate(date = as.Date(date, "X%Y.%m.%d")) %>% 
             add_column(ticker = ticker) %>% 
-            select(ticker, date, everything())
+            select(ticker, field, everything())
         }
     
     
     cf_tibble <- cf_page %>% flatten() %>% as_tibble(.name_repair=make.names)
+    
     if(cf_tibble %>% nrow() == 0 | cf_tibble %>% ncol() <= 2) {
         cf_df <- NA 
     } else {
-        cf_df <- cf_page %>% 
-            flatten() %>% 
-            as_tibble(.name_repair = make.names) %>% 
-            .[, colSums(is.na(.)) < nrow(.)] %>% 
-            rename(field = X) %>% 
+        cf_df <- 
+            cf_tibble %>% 
+            select(-any_of("X")) %>% 
+            janitor::remove_empty(which = "cols") %>% 
+            rename(field = Fields) %>% 
+            # append_number_dups() %>% 
             mutate(across(-field, ~str_remove_all(.x, ","))) %>% 
             mutate(across(-field, as.numeric)) %>% 
-            pivot_longer(-field, names_to = "date", values_to = "value") %>% 
-            pivot_wider(names_from = field, values_from = value) %>% 
             janitor::clean_names() %>% 
-            mutate(date = as.Date(date, "X%Y.%m.%d")) %>% 
             add_column(ticker = ticker) %>% 
-            select(ticker, date, everything())
+            select(ticker, field, everything())
         }
     
     return(list(balance_sheet = bs_df,
@@ -122,7 +119,10 @@ scrape_fundamentals <- function(ticker) {
 }
 
 
-# scrape_fundamentals(ticker = "erWEFDF")
+# scrape_fundamentals(ticker = "MSFT")
+# scrape_fundamentals(ticker = "GM")
+# scrape_fundamentals(ticker = "DLTR")
+# scrape_fundamentals(ticker = "COP")
 
 
 save_fundamentals <- function(tickers) {
@@ -160,7 +160,7 @@ save_fundamentals <- function(tickers) {
                               download_date, ".csv"))
             }
             
-            Sys.sleep(3)
+            Sys.sleep(1)
         }
     }
 }
@@ -221,13 +221,38 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
 
 # DOWNLOAD ----------------------------------------------------------------
 
-download_fundamentals(start_id = 1,
-                      # start_ticker = "VLDR",
-                      tickers = tickers_in_files)
+# download_fundamentals(start_id = 1,
+#                       # start_ticker = "VLDR",
+#                       tickers = tickers_in_files)
 
 
+#Include the parallel library. If the next line does not work, run install.packages(“parallel”) first
+library(parallel)
 
+# Use the detectCores() function to find the number of cores in system
+no_cores <- detectCores()
 
-    
-    
+# Setup cluster
+clust <- makeCluster(no_cores - 1) #This line will take time
+
+#Setting a base variable 
+# base <- 4
+#Note that this line is required so that all cores in cluster have this variable available
+clusterExport(clust, c("save_fundamentals", "str_replace_all",
+                       "scrape_fundamentals", "str_to_upper",
+                       "status_code", "GET", "read_html",
+                       "%>%", "str_extract", "html_text",
+                       "html_elements", "html_table",
+                       "as_tibble", "flatten", "select",
+                       "add_column", "mutate", "rename",
+                       "str_remove_all", "fwrite"))
+
+# parLapply(clust, 1:5, function(x) c(x^2,x^3))
+parLapply(clust, tickers_with_clean_prices,
+          function(x) save_fundamentals(tickers = x))
+
+# 7,548 files (2022-02-17)
+
+stopCluster(clust)
+
 

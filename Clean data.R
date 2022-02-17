@@ -8,6 +8,8 @@
 library(tidyverse)
 library(data.table)
 
+source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
+
 dir_proj <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data"
 
 today <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
@@ -16,26 +18,26 @@ today <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
 # Clean up formatting
 read_and_format <- function(x) {
     #####
-    # x <- bs_files[1]
+    # x <- bs_files_raw[1]
     #####
     
-    tbl <- x %>% fread(fill = TRUE, integer64 = "double", data.table = FALSE)
+    tbl <- read_tibble(x)
     
     if(!"download_date" %in% colnames(tbl)) {
         download_date <- x %>% 
             str_extract("(?<=\\()[0-9]{4} [0-9]{1,2} [0-9]{1,2}(?=\\))") %>% 
             as.Date("%Y %m %d")
-        tbl <- tbl %>% 
+        tbl <- tbl %>%
             add_column(download_date = download_date)
     }
     
-    tbl %>% 
-        mutate(across(-c(ticker, date, download_date), 
-                      ~str_remove_all(.x, ","))) %>%
-        mutate(across(-c(ticker, date, download_date), as.numeric)) %>% 
-        mutate(ticker = as.character(ticker)) %>% 
-        mutate(across(contains("date"), as.Date)) %>% 
-        drop_na(ticker, date, download_date)
+    tbl #%>%
+        # mutate(across(-c(ticker, date, download_date), 
+                      # ~str_remove_all(.x, ","))) %>%
+        # mutate(across(-c(ticker, date, download_date), as.numeric)) %>% 
+        # mutate(ticker = as.character(ticker)) %>% 
+        # mutate(across(contains("date"), as.Date)) %>% 
+        # drop_na(ticker, field, download_date)
 }
 
 
@@ -54,6 +56,77 @@ get_cleaned_data <- function(files) {
 }
 
 
+!!!! Identify tickers without common field names
+
+tickers_wo_key_fields <- NULL
+key_fields <- c("total_revenue",
+                "net_sales",
+                "total_revenues_and_other_income",
+                "gross_profit",
+                "operating_income", 
+                "earnings_before_provision_for_income_taxes"
+                "income_before_income_taxes",
+                "income_loss_before_income_taxes" (COP)
+                "net_earnings",
+                "net_income",
+                "net_income_loss", (COP)
+                "net_income_attributable_to_common_stockholders"
+                )
+
+# Example cleaning code
+basic_id <-
+    is_df_tmp %>% 
+    pull(field) %>% 
+    str_detect("^Basic$") %>% 
+    which()
+
+diluted_id <-
+    is_df_tmp %>% 
+    pull(field) %>% 
+    str_detect("^Diluted$") %>% 
+    which()
+
+row_means <-
+    is_df_tmp %>% 
+    select(-field) %>% 
+    rowMeans(na.rm = TRUE)
+
+if(length(basic_id) == 2) {
+    if(row_means[basic_id[1]] < 100 & row_means[basic_id[2]] >= 100) {
+        is_df_tmp[basic_id[1], "field"] <- "Basic eps"
+        is_df_tmp[basic_id[2], "field"] <- "Basic shares"
+    }
+    if(row_means[diluted_id[1]] < 100 & row_means[diluted_id[2]] >= 100) {
+        is_df_tmp[diluted_id[1], "field"] <- "Diluted eps"
+        is_df_tmp[diluted_id[2], "field"] <- "Diluted shares"
+    }
+
+
+
+
+
+
+
+
+
+
+basic_weighted_average_common_shares --> basic_shares
+basic_earnings_per_share --> basic_eps
+
+ticker: COP
+Net Income (Loss) Attributable to ConocoPhilips
+Basic  1.78
+Basic 1,3332,000,000
+
+
+
+
+
+
+
+
+
+
 
 
 # List files
@@ -67,13 +140,22 @@ cleaned_files <-
     list.files(paste0(dir_proj, "/data/cleaned data"), 
                pattern = "income_statement|balance_sheet|cash_flow",
                full.names = TRUE)
-combined_files <- sort(unique(c(raw_files, cleaned_files)), decreasing = TRUE)
+# combined_files <- sort(unique(c(raw_files, cleaned_files)), decreasing = TRUE)
+
+
+cleaned_files[1] %>% read_tibble() %>% 
+    colnames()
+
 
 
 # Subset files (SLOW!!)
-is_files <- combined_files %>% str_subset("income_statement")
-bs_files <- combined_files %>% str_subset("balance_sheet")
-cf_files <- combined_files %>% str_subset("cash_flow")
+is_files_raw <- raw_files %>% str_subset("income_statement")
+bs_files_raw <- raw_files %>% str_subset("balance_sheet")
+cf_files_raw <- raw_files %>% str_subset("cash_flow")
+
+is_files_cleaned <- cleaned_files %>% str_subset("income_statement")
+bs_files_cleaned <- cleaned_files %>% str_subset("balance_sheet")
+cf_files_cleaned <- cleaned_files %>% str_subset("cash_flow")
 
 
 # Clean data
