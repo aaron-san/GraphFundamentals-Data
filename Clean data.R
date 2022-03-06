@@ -585,16 +585,21 @@ consolidate_bs_field_names <- function(df) {
           ) ~ "cash",
         field %in% c(
           "short_term_marketable_securities",
-          "trading_securities"
+          "trading_securities",
+          "marketable_securities"
         ) ~ "short_term_investments",
+        # str_detect(field, # REGEX
+        # ) ~ "short_term_investments",
         # field %in% c(
         # ) ~ "cash_and_short_term_investments",
         field %in% c(
           "accounts_receivable_net",
           "receivables_net",
-          "customer_receivables",
-          "receivables_net_of_allowance",
-          "trade_receivables"
+          
+          # !!!! Create a rule such that if there are no allowance_for_... fields, then consider this net of that.
+          # "customer_receivables",
+          # "trade_receivables",
+          "receivables_net_of_allowance"
           ) ~ "accounts_receivable",
         str_detect(field, # REGEX
                    "accounts_receivable_net_of_allowance.*|accounts_receivable_less_allowance.*|receivables_net_of_allowances.*|trade_receivables_net_of_allowance.*"
@@ -606,7 +611,8 @@ consolidate_bs_field_names <- function(df) {
           "allowance_for_doubtful_accounts_receivable_current",
           "receivables_allowances",
           "trade_accounts_receivable_allowances_in_dollars",
-          "accounts_receivable_allowance"
+          "accounts_receivable_allowance",
+          "allowance_for_doubtful_accounts_trade_receivables_current"
           ) ~ "allowance_for_doubtful_accounts",
         # field %in% c() ~ "total_current_assets",
         field %in% c(
@@ -642,17 +648,21 @@ consolidate_bs_field_names <- function(df) {
           "accumulated_depreciation_of_property_and_equipment",
           "property_plant_and_equipment_owned_accumulated_depreciation",
           "accumulated_depreciation_and_amortization",
-          "less_accumulated_depreciation_and_amortization"
+          "less_accumulated_depreciation_and_amortization",
+          "property_and_equipment_accumulated_depreciation"
         ) ~ "accumulated_depreciation",
         field %in% c(
           "common_stock_shares_outstanding_in_shares",
           "common_stock_shares_outstanding",
-          "common_stock_outstanding_shares"
+          "common_stock_outstanding_shares",
+          "common_stock_outstanding_in_shares",
+          "common_stock_outstanding"
         ) ~ "shares_basic",
         field %in% c(
           "preferred_stock_shares_outstanding",
           "preferred_stock_shares_outstanding_in_shares",
-          "preferred_stock_outstanding_in_shares"
+          "preferred_stock_outstanding_in_shares",
+          "preference_shares_shares_outstanding"
         ) ~ "shares_preferred",
         
         ###############
@@ -684,10 +694,10 @@ consolidate_bs_field_names <- function(df) {
           "current_portion_of_long_term_debt_and_bank_borrowings",
           "current_portion_of_long_term_borrowings",
           "debt_current"
-        ) ~ "current_long_term_debt",
+        ) ~ "current_debt",
         str_detect(field, # REGEX
                    "^long_term_debt_due_within_one_year.*$"
-                   ) ~ "current_long_term_debt",
+                   ) ~ "current_debt",
         field %in% c(
           "notes_payable_and_long_term_debt_less_current_portion",
           "long_term_debt_and_finance_lease_obligations",
@@ -709,8 +719,12 @@ consolidate_bs_field_names <- function(df) {
           "lease_liability_current",
           "current_maturities_of_operating_lease_obligations",
           "current_portion_of_lease_obligations",
-          "operating_lease_liability_current"
-        ) ~ "current_long_term_lease_liabilities",
+          "operating_lease_liability_current",
+          "current_portion_of_operating_lease_liabilities",
+          "current_portion_of_operating_lease_liability",
+          "current_portion_of_operating_lease_liability",
+          "lease_liability_current_portion"
+        ) ~ "current_lease_liabilities",
         field %in% c(
           "operating_lease_liability_net_of_current_portion",
           "operating_lease_liabilities_noncurrent",
@@ -726,6 +740,16 @@ consolidate_bs_field_names <- function(df) {
           "lease_liability_net_of_current_portion",
           "operating_lease_liabilities_less_current_portion"
         ) ~ "long_term_lease_liabilities",
+        
+        # !! there are also finance_lease_obligations !!! file 119
+        
+        field %in% c(
+          "current_portion_of_deferred_revenue",
+          "deferred_revenue_current_portion"
+        ) ~ "current_deferred_revenue",
+        field %in% c(
+          "deferred_revenue_less_current_portion" 
+        ) ~ "long_term_deferred_revenue",
         field %in% c(
           "convertible_notes_payable_noncurrent_portion"  
         ) ~ "long_term_convertible_notes_payable",
@@ -766,11 +790,40 @@ consolidate_bs_field_names <- function(df) {
     ),
     field = rename_field_conditionally(
       x = field,
-      required_pior_string = "accounts_payable",
+      required_prior_string = "accounts_payable",
       required_posterior_string = "total_current_liabilities",
       current_string = "deferred_revenue",
       replacement = "current_deferred_revenue"
-    )
+    ),
+    field = rename_field_conditionally(
+      x = field,
+      required_prior_string = "accounts_payable",
+      required_posterior_string = "total_current_liabilities",
+      current_string = "deferred_revenues",
+      replacement = "current_deferred_revenue"
+    ),
+    field = rename_field_conditionally(
+      x = field,
+      required_prior_string = "total_current_liabilities",
+      required_posterior_string = "total_liabilities",
+      current_string = "deferred_revenue",
+      replacement = "long_term_deferred_revenue"
+    ),
+    field = rename_field_conditionally(
+      x = field,
+      required_prior_string = "accounts_payable",
+      required_posterior_string = "total_current_liabilities",
+      current_string = "operating_lease_liabilities",
+      replacement = "current_long_term_lease_liabilities"
+    ),
+    field = rename_field_conditionally(
+      x = field,
+      required_prior_string = "total_current_liabilities",
+      required_posterior_string = "total_liabilities",
+      current_string = "operating_lease_liability",
+      replacement = "long_term_lease_liabilities"
+    ),
+    field = rename_total_assets_if_missing(x = field)
     )
 }
 
@@ -855,38 +908,61 @@ fields_bs_to_ignore_2 <- function() {
     "unamortized_debt_premium",
     "common_stock_shares_redemption",
     "deferred_tax_assets_net",
-    "prepaid_expenses_and_other_assets")
+    "prepaid_expenses_and_other_assets",
+    "operating_lease_right_of_use_asset_net",
+    "acquired_in_process_research_and_development",
+    "right_to_use_asset",
+    "total_other_assets",
+    "common_stock_issued",
+    "work_in_progress",
+    "deferred_subscriber_acquisition_costs_net",
+    "common_stock_and_additional_paid_in_capital",
+    "long_term_other_assets",
+    "common_stock_authorized",
+    "client_funds_obligations",
+    "operating_lease_right_of_use_asset",
+    "deferred_contract_costs",
+    "common_stock_par_value_in_us_per_share",
+    "total_current_assets_before_funds_held_for_clients",
+    "funds_held_for_clients",
+    "preference_shares_shares_issued",
+    "preference_shares_par_value_in_dollars_per_share",
+    "preference_shares_shares_authorized",
+    "deferred_expenses",
+    "preferred_stock_liquidation_preference_value"
+    )
 }
 
 field_patterns_bs_to_ignore <- function() {
   c("^common_stock_.*(?=shares_authorized).*(?=shares_issued)|preferred_stock.*(?=shares_authorized).*(?=issued)|other_intangible_assets.*|^total_liabilities_class.*(?=shares).*|^treasury_stock.*|common_stock.*(?=shares_issued).*(?=outstanding).*|common_stock.*(?=par_value).*(outstanding).*|common_shares.*(?=par_value).*(?=authorized).*|^preferred_stock.*(?=authorized).*(?=issued).*|preferred_stock_par.*|common_stock_shares_par.*|income_taxes_payable.*|^common_shares_authorized.*|^preferred_shares_authorized.*|common_shares_shares_issued_in_shares|^common_shares_held_in_treasury.*|^common_shares.*(?=issued).*|^reinsurance.*|preferred_stock_authorized.*|preferred_stock_issued.*|^accrued_interest.*|^deferred_income_taxes.*|preferred_stock_.*_shares_outstanding|^treasury_shares.*|^par_value.*|^accumulated.*income_loss|^preferred_stock.*(?=outstanding)")
 }
 
-map(bs_files_raw[91:100],
+map(bs_files_raw[111:120],
     ~add_download_date(.x) %>% 
       clean_field_names() %>% 
-      consolidate_bs_field_names() %>%
       filter(!field %in% fields_bs_to_ignore_1()) %>%  
       filter(!field %in% fields_bs_to_ignore_2()) %>% 
       filter(!str_detect(field, field_patterns_bs_to_ignore())) %>% 
+      consolidate_bs_field_names() %>%
       pull(field))
 
 
 # Common fields
-seq_bs <- 1:100
+seq_bs <- 1:500
 
 all_bs_fields <-
   map(bs_files_raw[seq_bs],
     ~add_download_date(.x) %>% 
       clean_field_names() %>% 
-      consolidate_bs_field_names() %>%
-      filter(!field %in% fields_bs_to_ignore()) %>%  
+      filter(!field %in% fields_bs_to_ignore_1()) %>%  
+      filter(!field %in% fields_bs_to_ignore_2()) %>% 
       filter(!str_detect(field, field_patterns_bs_to_ignore())) %>% 
+      consolidate_bs_field_names() %>%
       pull(field)) %>% 
   unlist()
 
-pct_occur_bs <- 
-  {all_bs_fields %>% as.factor() %>% tabulate()} / length(seq_bs)
+
+all_bs_fields %>% table() %>% as_tibble() %>% arrange(desc(n)) %>% head(20)
 
 all_bs_fields[(pct_occur_bs > 0.3) %>% which()]
 

@@ -123,17 +123,16 @@ rename_field_conditionally <- function(x,
                                        current_string = NULL, 
                                        replacement = NULL) {
     #########
-    x <- bs_files_raw[91] %>% add_download_date() %>% clean_field_names() %>%
-      consolidate_bs_field_names() %>% pull(field)
-    required_prior_string <- "accounts_payable"
-    # required_prior_string <- NULL
-    required_posterior_string <- "total_current_liabilities"
-    current_string <- "deferred_revenue"
-    replacement <- "current_deferred_revenue"
+    # x <- bs_files_raw[91] %>% add_download_date() %>% clean_field_names() %>% pull(field)
+    # required_prior_string <- "accounts_payable"
+    # # required_prior_string <- NULL
+    # required_posterior_string <- "total_current_liabilities"
+    # current_string <- "deferred_revenue"
+    # replacement <- "current_deferred_revenue"
     #########
 
-    if(is.null(current_string)) return("Please provide a current_string!")
-    if(is.null(replacement)) return("Please provide a replacement_string!")
+    if(is.null(current_string)) stop("Please provide a current_string!")
+    if(is.null(replacement)) stop("Please provide a replacement_string!")
     
     id_prior_field <- 
         str_detect(x, pattern = paste0("^", required_prior_string, "$")) %>% 
@@ -143,21 +142,48 @@ rename_field_conditionally <- function(x,
         str_detect(x, pattern = paste0("^", required_posterior_string, "$")) %>%
         which() %>% first()
     
-    id_current_string <- str_detect(x, pattern = paste0("^", current_string, "$")) %>% which() %>% first()
-    if(is.na(id_current_string)) stop("current_string not found!")
+    id_current_string <- 
+        str_detect(x, pattern = paste0("^", current_string, "$")) %>% 
+        which() %>% first()
+    if(is.na(id_current_string)) return(x)
     
-    if(!is.na(id_prior_field) & is.na(id_posterior_field) & 
-       (id_current_string < id_posterior_field)) {
-        return(str_replace(x, current_string, replacement))
-    }
-    if(is.na(id_prior_field) & !is.na(id_posterior_field) & 
-       (id_current_string > id_prior_field)) {
-        return(str_replace(x, current_string, replacement))
-    }
-    if(is.na(id_prior_field) & is.na(id_posterior_field) & 
+    if(!is.na(id_prior_field) & !is.na(id_posterior_field) & 
        (id_current_string > id_prior_field) & 
        (id_current_string < id_posterior_field)) {
-        return(str_replace(x, current_string, replacement))
+        x[id_current_string] <- replacement
     }
+    if(!is.na(id_prior_field) & is.na(id_posterior_field) & 
+       (id_current_string > id_prior_field)) {
+        x[id_current_string] <- replacement
+    }
+    if(is.na(id_prior_field) & !is.na(id_posterior_field) & 
+       (id_current_string < id_posterior_field)) {
+        x[id_current_string] <- replacement
+    }
+    return(x)
 }
+
+
+
+rename_total_assets_if_missing <- function(x) {
+    #########
+    # x <- bs_files_raw[91] %>% add_download_date() %>%
+    #     clean_field_names() %>% pull(field)
+    #########
+    
+    if(!str_detect(x, "^total_assets$") %>% any() & 
+       str_detect(x, "^total_liabilities_and_stockholders_equity$") %>% any()) {
+      x <- str_replace(x, 
+                       "^total_liabilities_and_stockholders_equity$",
+                       "total_assets")
+    }
+    if(!str_detect(x, "^total_assets$") %>% any() & 
+       str_detect(x, "^total_liabilities_and_shareholders_equity$") %>% any()) {
+        x <- str_replace(x, 
+                         "^total_liabilities_and_shareholders_equity$",
+                         "total_assets")
+    }
+    return(x)
+}
+
 
