@@ -187,3 +187,33 @@ rename_total_assets_if_missing <- function(x) {
 }
 
 
+# If there are duplicate "net_income" fields, keep the last one
+remove_leading_duplicates <- function(x, field = NULL) {
+    #########
+    # x <- is_cleaned %>% .[names(.) == "ITT"] %>% setNames(NULL) %>% .[[1]] %>%
+    #     consolidate_is_field_names()
+    # field <- "net_income"
+    #########
+    
+    if(is.null(field)) stop("Provide a field")
+    
+    fields <- x %>% pull(field)
+    
+    dup_ids <- str_detect(fields, paste0("^", field, "$")) %>% which()
+    if(length(dup_ids) %in% c(0, 1)) return(x)   
+    
+    if(length(dup_ids) > 1) {
+        dups_to_remove <- dup_ids[-length(dup_ids)]
+        return(x %>% slice(-dups_to_remove))
+    }
+}
+
+is_cleaned %>% .[names(.) == "ITT"] %>% setNames(NULL) %>% .[[1]] %>%
+        consolidate_is_field_names() %>%
+        remove_leading_duplicates(., field = "net_income") %>%
+    pull(field)
+
+
+
+
+

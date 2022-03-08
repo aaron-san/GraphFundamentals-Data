@@ -155,372 +155,565 @@ clean_field_names <- function(df) {
 #### INCOME STATEMENT #######
 #############################
 
-consolidate_is_field_names <- function(df) {
-    ######
-    # df <- is_files_raw[1] %>% add_download_date() %>% clean_field_names()
-    ######
-    df %>%
-        mutate(field = case_when(
-            field %in% c(
-                "total_revenues",
-                "total_operating_revenues",
-                "net_revenue",
-                "net_revenues",
-                "revenue_net",
-                "sales_net",
-                "net_sales",
-                "sales",
-                "revenue",
-                "revenues",
-                "operating_revenue",
-                "operating_revenues",
-                "net_sales_and_other_revenue",
-                "total_net_revenue",
-                "net_service_revenues",
-                "total_revenues_net"
-            ) ~ "total_revenue",
-            field %in% c(
-                "total_cost_of_revenue",
-                "cost_of_products_sold",
-                "cost_of_goods_sold",
-                "cost_of_sales",
-                "total_cost_of_sales",
-                "cost_of_revenues",
-                "cost_of_sales_including_purchasing_and_warehousing_costs",
-                "total_costs_of_revenues",
-                "cost_of_revenues_exclusive_of_depreciation_and_amortization_shown_separately_below",
-                "cost_of_goods_and_services_sold",
-                "cost_of_service_revenues"
-            ) ~ "cost_of_revenue",
-            str_detect(field,
-                       "cost_of_sales_including_.*"
-                ) ~ "cost_of_revenue",
-            field %in% c(
-                "gross_margin",
-                "gross_loss"
-            ) ~ "gross_profit",
-            field %in% c(
-                "research_and_development_expenses"
-            ) ~ "research_and_development",
-            field %in% c(
-                "general_and_administrative_expenses"
-            ) ~ "general_and_administrative_expense",
-            field %in% c(
-                "selling_general_and_administrative_expenses",
-                "selling_and_administrative_expenses",
-                "selling_marketing_general_and_administrative"
-            ) ~ "selling_general_and_administrative",
-            field %in% c(
-                "sales_and_marketing",
-                "advertising_and_marketing"
-            ) ~ "selling_expense",
-            field %in% c(
-                "depreciation_amortization_depletion_and_accretion",
-                "depreciation_and_amortization_expense"
-            ) ~ "depreciation_amortization",
-            field %in% c(
-                "amortization_of_intangible_assets"
-            ) ~ "amortization",
-            field %in% c(
-                "income_from_operations",
-                "operating_loss_profit",
-                "income_loss_from_operations",
-                "loss_from_operations",
-                "operating_loss",
-                "operating_income_loss",
-                "net_loss_from_operations",
-                "loss_income_from_operations",
-                "operating_profit_loss",
-                "loss_from_operating_activities",
-                "earnings_loss_before_interest_and_income_taxes",
-                "net_operating_loss"
-            ) ~ "operating_income",
-            field %in% c(
-                "income_before_income_taxes",
-                "income_before_provision_for_income_taxes",
-                "earnings_before_income_tax_expense",
-                "income_from_operations_before_income_taxes",
-                "net_loss_before_provision_for_income_tax",
-                "income_loss_before_income_taxes",
-                "net_income_loss_before_tax",
-                "loss_before_income_taxes",
-                "income_loss_before_income_tax_credit",
-                "income_before_income_tax",
-                "loss_income_before_income_taxes",
-                "income_loss_before_taxes",
-                "loss_before_income_tax_provision_benefit",
-                "loss_before_provision_for_income_taxes",
-                "income_before_income_tax_expense",
-                "earnings_before_income_taxes",
-                "income_loss_before_income_tax_expense",
-                "loss_before_income_tax",
-                "income_loss_before_provision_for_income_taxes",
-                "net_loss_before_income_tax_benefit",
-                "net_loss_before_income_taxes",
-                "income_before_income_tax_expense_and_equity_earnings",
-                "income_loss_before_income_tax_expense_benefit",
-                "net_income_before_income_taxes"
-            ) ~ "income_before_taxes",
-            field %in% c(
-                "income_taxes",
-                "provision_for_income_taxes",
-                "provision_for_income_tax_expense",
-                "income_tax_expense_benefit",
-                "income_tax_benefit_expense",
-                "income_tax_provision",
-                "income_taxes_credit",
-                "benefit_from_provision_for_income_taxes",
-                "income_tax_provision_benefit",
-                "total_benefit_for_income_taxes",
-                "provision_for_benefit_from_income_taxes",
-                "provision_benefit_for_income_taxes",
-                "income_tax_recovery",
-                "benefit_for_income_taxes"
-            ) ~ "income_tax_expense",
-            field %in% c(
-                "net_income",
-                "net_earnings_loss",
-                "net_income_loss",
-                "net_loss",
-                "net_loss_income",
-                "net_earnings"
-            ) ~ "net_income",
-            str_detect(field,
-                       "net_income_loss_attributable_to(?!.*_per_).*|net_loss_attributable_to(?!.*_per_).*|net_income_attributable_to(?!.*_per_).*"
-            ) ~ "net_income",
-            field %in% c(
-                "dividends_per_common_share_in_dollars_per_share"
-            ) ~ "dividends_per_share",
-            field %in% c(
-                "basic_earnings_per_common_share_in_dollars_per_share",
-                "earnings_loss_per_share_in_dollars_per_share",
-                "basic_in_dollars_per_share",
-                "earnings_loss_per_share_in_dollars_per_share",
-                "earnings_per_common_share_basic_in_usd_per_share",
-                "basic_and_diluted_loss_per_share",
-                "basic_earnings_per_share_in_dollars_per_share",
-                "basic_in_dollars_per_unit",
-                "basic_usd_per_share",
-                "basic_earnings_per_common_share",
-                "net_loss_per_share_basic_and_diluted_basic_and_diluted",
-                "net_income_per_share_basic",
-                "basic_and_diluted_income_loss_per_common_share",
-                "net_income_loss_per_share_basic",
-                "net_income_per_common_share_basic",
-                "basic_and_diluted_loss_per_share_of_common_stock",
-                "net_loss_per_common_share_basic_and_diluted",
-                "basic_per_share",
-                "net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
-                "net_loss_per_share_basic_and_diluted",
-                "net_income_per_common_share_basic_in_usd_per_share",
-                "basic_income_per_share_in_usd_per_share",
-                "net_income_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
-                "basic_earnings_per_share",
-                "basic_and_diluted_net_loss_per_share_attributable_to_common_stockholders_in_dollars_per_share",
-                "basic_and_diluted_net_loss_per_common_share",
-                "net_loss_per_share_of_common_stock_basic_and_diluted_in_dollars_per_share",
-                "net_loss_income_per_common_share_basic",
-                "net_income_loss_per_sharebasic",
-                "basic_earnings_in_dollars_per_share",
-                "basic_in_usd_per_share",
-                "basic_and_diluted_earnings_loss_per_share",
-                "basic_and_diluted_in_dollars_per_share",
-                "basic_and_diluted_profit_loss_per_common_share",
-                "basic_net_income_loss_per_common_share",
-                "basic_and_diluted_income_loss_per_share_in_dollars_per_share",
-                "earnings_per_share_basic",
-                "net_loss_per_share_basic_and_diluted_in_dollars_per_share",
-                "basic_and_diluted_net_loss_per_share",
-                "basic_net_income_per_share",
-                "basic_net_income_per_share_in_usd_per_share",
-                "basic_earnings_per_share_in_us_per_share",
-                "basic_and_diluted_per_common_share_in_dollars_per_share",
-                "earnings_per_common_share_basic_in_dollars_per_share",
-                "basic_net_earnings_losses_per_common_share_in_dollars_per_share",
-                "basic_income_per_share",
-                "earnings_loss_per_common_share_basic",
-                "net_loss_per_common_sharebasic_in_dollars_per_share",
-                "earnings_per_common_share",
-                "net_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
-                "net_income_loss_per_basic_share",
-                "basic_and_diluted_loss_per_common_share",
-                "net_loss_per_common_share_basic"
-            ) ~ "basic_eps",
-            str_detect(field,
-                      "total_basic_earnings_per_share_attributable_to.*common_shareholders"
-                ) ~ "basic_eps",
-            field %in% c(
-                "diluted_earnings_per_common_share_in_dollars_per_share",
-                "earnings_loss_per_share_assuming_dilution_in_dollars_per_share",
-                "diluted_in_dollars_per_share",
-                "earnings_per_common_share_diluted_in_usd_per_share",
-                "basic_and_diluted_loss_per_share",
-                "diluted_earnings_per_share_in_dollars_per_share",
-                "diluted_in_dollars_per_unit",
-                "diluted_usd_per_share",
-                "diluted_earnings_per_common_share",
-                "net_loss_per_share_basic_and_diluted_basic_and_diluted",
-                "net_income_per_share_diluted",
-                "basic_and_diluted_income_loss_per_common_share",
-                "net_income_loss_per_share_diluted",
-                "net_income_per_common_share_diluted",
-                "basic_and_diluted_loss_per_share_of_common_stock",
-                "net_loss_per_common_share_basic_and_diluted",
-                "diluted_per_share",
-                "net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
-                "net_loss_per_share_basic_and_diluted",
-                "net_income_per_common_share_diluted_in_usd_per_share",
-                "diluted_income_per_share_in_usd_per_share",
-                "net_income_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
-                "diluted_earnings_per_share",
-                "basic_and_diluted_net_loss_per_share_attributable_to_common_stockholders_in_dollars_per_share",
-                "basic_and_diluted_net_loss_per_common_share",
-                "net_loss_per_share_of_common_stock_basic_and_diluted_in_dollars_per_share",
-                "net_loss_income_per_common_share_diluted",
-                "diluted_in_usd_per_share",
-                "net_income_loss_per_sharediluted",
-                "basic_and_diluted_earnings_loss_per_share",
-                "basic_and_diluted_in_dollars_per_share",
-                "basic_and_diluted_profit_loss_per_common_share",
-                "basic_and_diluted_income_loss_per_share_in_dollars_per_share",
-                "earnings_per_share_diluted",
-                "net_loss_per_share_basic_and_diluted_in_dollars_per_share",
-                "diluted_loss_per_common_share_in_dollars_per_share",
-                "basic_and_diluted_net_loss_per_share",
-                "diluted_net_income_per_share",
-                "diluted_earnings_per_share_in_us_per_share",
-                "diluted_net_income_per_share_in_usd_per_share",
-                "basic_and_diluted_per_common_share_in_dollars_per_share",
-                "earnings_per_common_share_diluted_in_dollars_per_share",
-                "diluted_net_earnings_losses_per_common_share_in_dollars_per_share",
-                "diluted_income_per_share",
-                "earnings_loss_per_common_share_diluted",
-                "earnings_per_common_share_assuming_dilution",
-                "net_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
-                "net_income_loss_per_diluted_share",
-                "basic_and_diluted_loss_per_common_share"
-            ) ~ "diluted_eps",
-            str_detect(field,
-                       "total_diluted_earnings_per_share_attributable_to.*common_shareholders"
-            ) ~ "diluted_eps",
-            field %in% c(
-                "weighted_average_shares_of_common_stock_outstanding_basic_in_shares",
-                "basic_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_basic_and_fully_diluted",
-                "weighted_average_common_shares_outstanding",
-                "weighted_average_basic_shares_outstanding_in_shares",
-                "weighted_average_number_of_shares_outstanding_basic_and_diluted",
-                "weighted_average_number_of_common_shares_outstanding",
-                "weighted_average_shares_outstanding_basic",
-                "basic_and_diluted_income_loss_per_common_share",
-                "weighted_average_number_of_shares_outstanding_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_basic",
-                "weighted_average_number_of_shares_of_common_stock_outstanding",
-                "weighted_average_common_shares_outstanding_basic_and_diluted",
-                "weighted_average_common_shares_used_in_computing_net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_basic_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_basic_and_diluted_in_shares",
-                "basic_weighted_average_common_shares",
-                "basic_and_diluted_weighted_average_shares_outstanding_common_stock_in_shares",
-                "weighted_average_shares_used_in_computation_of_basic_and_diluted_net_loss_per_common_share",
-                "shares_used_in_computing_net_loss_per_share_of_common_stock_basic_and_diluted_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_basic_in_shares",
-                "weighted_average_common_shares_outstanding_used_in_computing_net_loss_per_sharebasic",
-                "basic_and_diluted_in_shares",
-                "average_number_of_shares_outstanding_basic",
-                "weighted_average_shares_basic_and_diluted_in_shares",
-                "shares_used_to_compute_earnings_per_common_share_basic_in_shares",
-                "basic_and_diluted_weighted_average_shares_outstanding_common_stock",
-                "weighted_average_number_of_common_shares_outstanding_basic",
-                "shares_used_to_compute_basic_net_income_per_share",
-                "weighted_average_shares_used_in_computing_basic_net_income_per_share_in_shares",
-                "basic_weighted_average_shares_outstanding_shares",
-                "basic_and_diluted_weighted_average_shares_outstanding",
-                "weighted_average_common_shares_outstanding_basic_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_during_the_period_basic_and_diluted_in_shares",
-                "weighted_average_number_of_common_shares_outstandingbasic_in_shares",
-                "weighted_average_common_shares_outstanding_earnings_per_common_share",
-                "weighted_average_common_shares_outstanding_basic_and_diluted_in_shares",
-                "weighted_average_common_shares_outstanding_basic",
-                "basic_weighted_average_common_shares_outstanding",
-                "weighted_average_number_of_shares_outstanding_basic_and_fully_diluted",
-                "basic_weighted_average_shares_of_common_stock_outstanding_in_shares",
-                "weighted_average_shares_used_in_computing_net_loss_per_share_basic_and_diluted"
-                ) ~ "basic_shares",
-            str_detect(field,
-                       "weighted_average_number_of_basic.*common_shares_outstanding"
-                ) ~ "basic_shares",
-            field %in% c(
-                "weighted_average_shares_of_common_stock_outstanding_diluted_in_shares",
-                "diluted_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_basic_and_fully_diluted",
-                "weighted_average_common_shares_outstanding",
-                "weighted_average_diluted_shares_outstanding_in_shares",
-                "weighted_average_number_of_shares_outstanding_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_during_the_period_diluted",
-                "weighted_average_shares_outstanding_diluted",
-                "weighted_average_number_of_shares_outstanding_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_diluted",
-                "weighted_average_common_shares_outstanding_basic_and_diluted",
-                "weighted_average_common_shares_used_in_computing_net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_diluted_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_basic_and_diluted_in_shares",
-                "diluted_weighted_average_common_shares",
-                "basic_and_diluted_weighted_average_shares_outstanding_common_stock_in_shares",
-                "weighted_average_shares_used_in_computation_of_basic_and_diluted_net_loss_per_common_share",
-                "shares_used_in_computing_net_loss_per_share_of_common_stock_basic_and_diluted_in_shares",
-                "weighted_average_number_of_common_shares_outstanding_diluted_in_shares",
-                "weighted_average_common_shares_outstanding_used_in_computing_net_loss_per_sharediluted",
-                "basic_and_diluted_in_shares",
-                "average_number_of_shares_outstanding_diluted",
-                "weighted_average_shares_basic_and_diluted_in_shares",
-                "shares_used_to_compute_earnings_per_common_share_diluted_in_shares",
-                "basic_and_diluted_weighted_average_shares_outstanding_common_stock",
-                "weighted_average_number_of_common_shares_outstanding_diluted",
-                "shares_used_to_compute_diluted_net_income_per_share",
-                "weighted_average_shares_used_in_computing_diluted_net_income_per_share_in_shares",
-                "diluted_weighted_average_shares_outstanding_shares",
-                "basic_and_diluted_weighted_average_shares_outstanding",
-                "weighted_average_number_of_common_shares_outstanding_basic_and_diluted",
-                "weighted_average_number_of_shares_outstanding_during_the_period_basic_and_diluted_in_shares",
-                "weighted_average_common_shares_outstanding_earnings_per_common_share_assuming_dilution",
-                "weighted_average_common_shares_outstanding_basic_and_diluted_in_shares",
-                "weighted_average_common_shares_outstanding_diluted",
-                "diluted_weighted_average_common_shares_outstanding",
-                "weighted_average_number_of_shares_outstanding_basic_and_fully_diluted",
-                "weighted_average_shares_outstanding_diluted_in_shares",
-                "weighted_average_shares_used_in_computing_net_loss_per_share_basic_and_diluted"
-            ) ~ "diluted_shares",
-            str_detect(field,
-                      "weighted_average_number_of_diluted.*common_shares_outstanding"
-                ) ~ "diluted_shares",
-            TRUE ~ field
-        ))
-}
 
+consolidate_is_field_names <- function(df) {
+  ######
+  # df <- is_files_raw[1] %>% add_download_date() %>% clean_field_names()
+  ######
+  df %>%
+    mutate(
+      field = case_when(
+        field %in% c(
+          "total_revenues",
+          "total_operating_revenues",
+          "net_revenue",
+          "net_revenues",
+          "revenue_net",
+          "sales_net",
+          "net_sales",
+          "sales",
+          "revenue",
+          "revenues",
+          "operating_revenue",
+          "operating_revenues",
+          "net_sales_and_other_revenue",
+          "total_net_revenue",
+          "net_service_revenues",
+          "total_revenues_net",
+          "total_revenue_net"
+        ) ~ "total_revenue",
+        field %in% c(
+          "total_cost_of_revenue",
+          "cost_of_products_sold",
+          "cost_of_goods_sold",
+          "cost_of_sales",
+          "total_cost_of_sales",
+          "cost_of_revenues",
+          "cost_of_sales_including_purchasing_and_warehousing_costs",
+          "total_costs_of_revenues",
+          "cost_of_revenues_exclusive_of_depreciation_and_amortization_shown_separately_below",
+          "cost_of_goods_and_services_sold",
+          "cost_of_service_revenues",
+          "cost_of_sales_excluding_amortization_shown_separately_below",
+          "cost_of_service_revenue"
+        ) ~ "cost_of_revenue",
+        str_detect(field, #REGEX
+                   "cost_of_sales_including_.*") ~ "cost_of_revenue",
+        field %in% c(
+          "gross_margin",
+          "gross_loss",
+          "gross_loss_profit",
+          "total_gross_profit"
+          ) ~ "gross_profit",
+        field %in% c("research_and_development_expenses") ~ "research_and_development",
+        field %in% c(
+          "general_and_administrative_expenses",
+          "general_and_administrative_expense",
+          "general_and_administrative_and_other"#,
+          # "general_administrative_expense"
+        ) ~ "general_administrative_expense",
+        field %in% c(
+          "selling_general_and_administrative_expenses",
+          "selling_and_administrative_expenses",
+          "selling_marketing_general_and_administrative",
+          "selling_general_and_administrative"
+        ) ~ "selling_general_administrative",
+        field %in% c(
+          "sales_and_marketing",
+          "advertising_and_marketing",
+          "selling_and_marketing",
+          "selling_and_marketing_expenses",
+          "advertising_and_promotion"
+        ) ~ "selling_expense",
+        field %in% c(
+          "depreciation_amortization_depletion_and_accretion",
+          "depreciation_and_amortization_expense",
+          "depreciation_and_amortization",
+          "depreciation_depletion_and_amortization"
+        ) ~ "depreciation_amortization",
+        field %in% c(
+          "amortization_of_intangible_assets",
+          "amortization_of_intangibles"
+        ) ~ "amortization",
+        field %in% c("total_operating_costs_and_expenses") ~ "total_operating_costs",
+        field %in% c(
+          "income_from_operations",
+          "operating_loss_profit",
+          "income_loss_from_operations",
+          "loss_from_operations",
+          "operating_loss",
+          "operating_income_loss",
+          "net_loss_from_operations",
+          "loss_income_from_operations",
+          "operating_profit_loss",
+          "loss_from_operating_activities",
+          "earnings_loss_before_interest_and_income_taxes",
+          "net_operating_loss",
+          "operating_loss_income"
+        ) ~ "operating_income",
+        str_detect(field, #REGEX
+                   "interest_expense.*") ~ "interest_expense",
+        field %in% c(
+          "interest_earned_on_marketable_securities_held_in_trust_account"
+        ) ~ "interest_earned_on_marketable_securities",
+        field %in% c(
+          "net_interest_income_after_provision_for_loan_losses",
+          "net_interest_income_after_provision_for_credit_losses"
+        ) ~ "net_interest_income",
+        field %in% c(
+          "income_before_income_taxes",
+          "income_before_provision_for_income_taxes",
+          "earnings_before_income_tax_expense",
+          "income_from_operations_before_income_taxes",
+          "net_loss_before_provision_for_income_tax",
+          "income_loss_before_income_taxes",
+          "net_income_loss_before_tax",
+          "loss_before_income_taxes",
+          "income_loss_before_income_tax_credit",
+          "income_before_income_tax",
+          "loss_income_before_income_taxes",
+          "income_loss_before_taxes",
+          "loss_before_income_tax_provision_benefit",
+          "loss_before_provision_for_income_taxes",
+          "income_before_income_tax_expense",
+          "earnings_before_income_taxes",
+          "income_loss_before_income_tax_expense",
+          "loss_before_income_tax",
+          "income_loss_before_provision_for_income_taxes",
+          "net_loss_before_income_tax_benefit",
+          "net_loss_before_income_taxes",
+          "income_before_income_tax_expense_and_equity_earnings",
+          "income_loss_before_income_tax_expense_benefit",
+          "net_income_before_income_taxes",
+          "loss_before_income_tax_expense",
+          "loss_before_taxes",
+          "loss_before_taxes_on_income"
+        ) ~ "income_before_taxes",
+        field %in% c(
+          "income_taxes",
+          "provision_for_income_taxes",
+          "provision_for_income_tax_expense",
+          "income_tax_expense_benefit",
+          "income_tax_benefit_expense",
+          "income_tax_provision",
+          "income_taxes_credit",
+          "benefit_from_provision_for_income_taxes",
+          "income_tax_provision_benefit",
+          "total_benefit_for_income_taxes",
+          "provision_for_benefit_from_income_taxes",
+          "provision_benefit_for_income_taxes",
+          "income_tax_recovery",
+          "benefit_for_income_taxes",
+          "income_taxes_benefit",
+          "income_taxes_expense",
+          "less_provision_benefit_for_income_taxes",
+          "benefit_provision_for_income_taxes",
+          "income_tax_provision_benefit_net",
+          "income_tax_benefit",
+          "provision_for_income_tax"
+        ) ~ "income_taxes",
+        field %in% c(
+          "net_income",
+          "net_earnings_loss",
+          "net_income_loss",
+          "net_loss",
+          "net_loss_income",
+          "net_earnings"
+        ) ~ "net_income",
+        str_detect(
+          field,
+          "net_income_loss_attributable_to(?!.*_per_).*|net_loss_attributable_to(?!.*_per_).*|net_income_attributable_to(?!.*_per_).*"
+        ) ~ "net_income",
+        field %in% c("dividends_per_common_share_in_dollars_per_share") ~ "basic_dividends_per_share",
+        field %in% c("dividend_on_preferred_stock") ~ "preferred_dividends",
+        field %in% c(
+          "basic_earnings_per_common_share_in_dollars_per_share",
+          "earnings_loss_per_share_in_dollars_per_share",
+          "basic_in_dollars_per_share",
+          "earnings_loss_per_share_in_dollars_per_share",
+          "earnings_per_common_share_basic_in_usd_per_share",
+          "basic_earnings_per_share_in_dollars_per_share",
+          "basic_in_dollars_per_unit",
+          "basic_usd_per_share",
+          "basic_earnings_per_common_share",
+          "net_income_per_share_basic",
+          "net_income_loss_per_share_basic",
+          "net_income_per_common_share_basic",
+          "basic_per_share",
+          "net_income_per_common_share_basic_in_usd_per_share",
+          "basic_income_per_share_in_usd_per_share",
+          "basic_earnings_per_share",
+          "net_loss_income_per_common_share_basic",
+          "net_income_loss_per_sharebasic",
+          "basic_earnings_in_dollars_per_share",
+          "basic_in_usd_per_share",
+          "basic_net_income_loss_per_common_share",
+          "earnings_per_share_basic",
+          "basic_net_income_per_share",
+          "basic_net_income_per_share_in_usd_per_share",
+          "basic_earnings_per_share_in_us_per_share",
+          "earnings_per_common_share_basic_in_dollars_per_share",
+          "basic_net_earnings_losses_per_common_share_in_dollars_per_share",
+          "basic_income_per_share",
+          "earnings_loss_per_common_share_basic",
+          "net_loss_per_common_sharebasic_in_dollars_per_share",
+          "earnings_per_common_share",
+          "net_income_loss_per_basic_share",
+          "net_loss_per_common_share_basic",
+          "net_loss_income_per_share_basic_in_usd_per_share",
+          "basic_loss_per_common_share_in_dollars_per_share",
+          "net_loss_per_share_basic_in_dollars_per_share",
+          "basic_net_loss_per_share"
+        ) ~ "basic_eps",
+        str_detect(
+          field,
+          "total_basic_earnings_per_share_attributable_to.*common_shareholders"
+        ) ~ "basic_eps",
+        field %in% c(
+          "diluted_earnings_per_common_share_in_dollars_per_share",
+          "earnings_loss_per_share_assuming_dilution_in_dollars_per_share",
+          "diluted_in_dollars_per_share",
+          "earnings_per_common_share_diluted_in_usd_per_share",
+          "diluted_earnings_per_share_in_dollars_per_share",
+          "diluted_in_dollars_per_unit",
+          "diluted_usd_per_share",
+          "diluted_earnings_per_common_share",
+          "net_income_per_share_diluted",
+          "net_income_loss_per_share_diluted",
+          "net_income_per_common_share_diluted",
+          "diluted_per_share",
+          "net_income_per_common_share_diluted_in_usd_per_share",
+          "diluted_income_per_share_in_usd_per_share",
+          "diluted_earnings_per_share",
+          "net_loss_income_per_common_share_diluted",
+          "diluted_in_usd_per_share",
+          "net_income_loss_per_sharediluted",
+          "earnings_per_share_diluted",
+          "diluted_loss_per_common_share_in_dollars_per_share",
+          "diluted_net_income_per_share",
+          "diluted_earnings_per_share_in_us_per_share",
+          "diluted_net_income_per_share_in_usd_per_share",
+          "basic_and_diluted_per_common_share_in_dollars_per_share",
+          "earnings_per_common_share_diluted_in_dollars_per_share",
+          "diluted_net_earnings_losses_per_common_share_in_dollars_per_share",
+          "diluted_income_per_share",
+          "earnings_loss_per_common_share_diluted",
+          "earnings_per_common_share_assuming_dilution",
+          "net_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
+          "net_income_loss_per_diluted_share",
+          "basic_and_diluted_loss_per_common_share",
+          "net_loss_income_per_share_diluted_in_usd_per_share",
+          "net_loss_per_share_diluted_in_dollars_per_share",
+          "net_income_loss_per_common_share_diluted"
+        ) ~ "diluted_eps",
+        str_detect(
+          field,
+          #REGEX
+          "total_diluted_earnings_per_share_attributable_to.*common_shareholders"
+        ) ~ "diluted_eps",
+        field %in% c(
+          "basic_and_diluted_loss_attributable_to_common_stockholders_per_common_share_in_dollars_per_share",
+          "loss_per_share_basic_and_diluted_in_dollars_per_share",
+          "net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
+          "net_income_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_net_loss_per_share_attributable_to_common_stockholders_in_dollars_per_share",
+          "basic_and_diluted_net_loss_per_common_share",
+          "net_loss_per_share_of_common_stock_basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_earnings_loss_per_share",
+          "basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_profit_loss_per_common_share",
+          "basic_and_diluted_income_loss_per_share_in_dollars_per_share",
+          "net_loss_per_share_basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_net_loss_per_share",
+          "basic_and_diluted_per_common_share_in_dollars_per_share",
+          "net_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_loss_per_common_share",
+          "basic_and_diluted_loss_per_share",
+          "net_loss_per_share_basic_and_diluted_basic_and_diluted",
+          "basic_and_diluted_income_loss_per_common_share",
+          "basic_and_diluted_loss_per_share_of_common_stock",
+          "net_loss_per_common_share_basic_and_diluted",
+          "net_loss_per_share_basic_and_diluted",
+          "basic_and_diluted_loss_per_share",
+          "net_loss_per_share_basic_and_diluted_basic_and_diluted",
+          "basic_and_diluted_income_loss_per_common_share",
+          "basic_and_diluted_loss_per_share_of_common_stock",
+          "net_loss_per_common_share_basic_and_diluted",
+          "net_loss_per_share_basic_and_diluted",
+          "net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
+          "net_income_loss_per_common_share_basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_net_loss_per_share_attributable_to_common_stockholders_in_dollars_per_share",
+          "basic_and_diluted_net_loss_per_common_share",
+          "net_loss_per_share_of_common_stock_basic_and_diluted_in_dollars_per_share",       
+          "basic_and_diluted_earnings_loss_per_share",
+          "basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_profit_loss_per_common_share",
+          "basic_and_diluted_income_loss_per_share_in_dollars_per_share",
+          "net_loss_per_share_basic_and_diluted_in_dollars_per_share",
+          "basic_and_diluted_net_loss_per_share",
+          "earnings_per_share_basic_and_diluted",
+          "basic_and_diluted_income_loss_per_share",
+          "net_loss_per_ordinary_share_basic_and_diluted_usd",
+          "loss_per_share_attributable_to_shareholders_basic_and_diluted_in_dollars_per_share",
+          "loss_per_common_share_basic_and_diluted",
+          "net_loss_per_share_total_basic_and_diluted",
+          "loss_per_share_basic_and_diluted",
+          "basic_and_diluted_income_per_share_in_dollars_per_share",
+          "net_income_available_to_common_stockholders_basic_and_diluted",
+          "net_loss_per_share_basic_and_diluted_in_usd_per_share",
+          "basic_and_diluted_net_loss_applicable_to_common_stockholders_per_share",
+          "basic_and_diluted_net_loss_per_share_attributable_to_common_stockholders",
+          "basic_and_diluted_loss_per_share_in_dollars_per_share"
+        ) ~ "basic_and_diluted_eps",
+        field %in% c(
+          "weighted_average_shares_of_common_stock_outstanding_basic_in_shares",
+          "basic_in_shares",
+          "weighted_average_number_of_shares_outstanding_in_shares",
+          "weighted_average_number_of_common_shares_outstanding_basic_and_fully_diluted",
+          "weighted_average_common_shares_outstanding",
+          "weighted_average_basic_shares_outstanding_in_shares",
+          "weighted_average_number_of_shares_outstanding_basic_and_diluted",
+          "weighted_average_number_of_common_shares_outstanding",
+          "weighted_average_shares_outstanding_basic",
+          "basic_and_diluted_income_loss_per_common_share",
+          "weighted_average_number_of_shares_outstanding_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_basic",
+          "weighted_average_number_of_shares_of_common_stock_outstanding",
+          "weighted_average_common_shares_outstanding_basic_and_diluted",
+          "weighted_average_common_shares_used_in_computing_net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_basic_in_shares",
+          "weighted_average_number_of_common_shares_outstanding_basic_and_diluted_in_shares",
+          "basic_weighted_average_common_shares",
+          "basic_and_diluted_weighted_average_shares_outstanding_common_stock_in_shares",
+          "weighted_average_shares_used_in_computation_of_basic_and_diluted_net_loss_per_common_share",
+          "shares_used_in_computing_net_loss_per_share_of_common_stock_basic_and_diluted_in_shares",
+          "weighted_average_number_of_common_shares_outstanding_basic_in_shares",
+          "weighted_average_common_shares_outstanding_used_in_computing_net_loss_per_sharebasic",
+          "basic_and_diluted_in_shares",
+          "average_number_of_shares_outstanding_basic",
+          "weighted_average_shares_basic_and_diluted_in_shares",
+          "shares_used_to_compute_earnings_per_common_share_basic_in_shares",
+          "basic_and_diluted_weighted_average_shares_outstanding_common_stock",
+          "weighted_average_number_of_common_shares_outstanding_basic",
+          "shares_used_to_compute_basic_net_income_per_share",
+          "weighted_average_shares_used_in_computing_basic_net_income_per_share_in_shares",
+          "basic_weighted_average_shares_outstanding_shares",
+          "basic_and_diluted_weighted_average_shares_outstanding",
+          "weighted_average_common_shares_outstanding_basic_in_shares",
+          "weighted_average_number_of_common_shares_outstanding_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_during_the_period_basic_and_diluted_in_shares",
+          "weighted_average_number_of_common_shares_outstandingbasic_in_shares",
+          "weighted_average_common_shares_outstanding_earnings_per_common_share",
+          "weighted_average_common_shares_outstanding_basic_and_diluted_in_shares",
+          "weighted_average_common_shares_outstanding_basic",
+          "basic_weighted_average_common_shares_outstanding",
+          "weighted_average_number_of_shares_outstanding_basic_and_fully_diluted",
+          "basic_weighted_average_shares_of_common_stock_outstanding_in_shares",
+          "weighted_average_shares_used_in_computing_net_loss_per_share_basic_and_diluted",
+          "weighted_number_of_common_shares_outstanding",
+          "weighted_average_common_shares_basic_in_shares",
+          "weighted_average_common_shares_basic",
+          "weighted_average_common_shares_outstanding",
+          "weighted_average_number_of_common_shares_outstanding_in_shares"
+        ) ~ "basic_shares",
+        str_detect(
+          field,
+          #REGEX
+          "weighted_average_number_of_basic.*common_shares_outstanding|^weighted_average_common_shares_outstanding.*"
+        ) ~ "basic_shares",
+        field %in% c(
+          "weighted_average_shares_of_common_stock_outstanding_diluted_in_shares",
+          "diluted_in_shares",
+          "weighted_average_diluted_shares_outstanding_in_shares",
+          "weighted_average_number_of_shares_outstanding_during_the_period_diluted",
+          "weighted_average_shares_outstanding_diluted",
+          "weighted_average_number_of_shares_outstanding_diluted_in_shares",
+          "diluted_weighted_average_common_shares",
+          "weighted_average_number_of_common_shares_outstanding_diluted_in_shares",
+          "weighted_average_common_shares_outstanding_used_in_computing_net_loss_per_sharediluted",
+          "average_number_of_shares_outstanding_diluted",
+          "shares_used_to_compute_earnings_per_common_share_diluted_in_shares",
+          "weighted_average_number_of_common_shares_outstanding_diluted",
+          "shares_used_to_compute_diluted_net_income_per_share",
+          "weighted_average_shares_used_in_computing_diluted_net_income_per_share_in_shares",
+          "diluted_weighted_average_shares_outstanding_shares",
+          "weighted_average_common_shares_outstanding_earnings_per_common_share_assuming_dilution",
+          "weighted_average_common_shares_outstanding_diluted",
+          "diluted_weighted_average_common_shares_outstanding",
+          "weighted_average_shares_outstanding_diluted_in_shares",
+          "weighted_average_common_shares_diluted_in_shares",
+          "weighted_average_common_shares_diluted"
+        ) ~ "diluted_shares",
+        field %in% c(
+          "weighted_average_common_shares_outstanding_basic_and_diluted_in_shares",
+          "weighted_average_shares_used_in_computing_net_loss_per_share_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_basic_and_fully_diluted",
+          "weighted_average_shares_used_to_compute_net_loss_per_share_basic_and_diluted",
+          "basic_and_diluted_in_shares",
+          "weighted_average_shares_basic_and_diluted_in_shares",
+          "basic_and_diluted_weighted_average_shares_outstanding_common_stock",
+          "basic_and_diluted_weighted_average_shares_outstanding",
+          "weighted_average_number_of_common_shares_outstanding_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_during_the_period_basic_and_diluted_in_shares",
+          "basic_and_diluted_weighted_average_shares_outstanding_common_stock_in_shares",
+          "weighted_average_shares_used_in_computation_of_basic_and_diluted_net_loss_per_common_share",
+          "shares_used_in_computing_net_loss_per_share_of_common_stock_basic_and_diluted_in_shares",
+          "weighted_average_number_of_shares_outstanding_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_diluted",
+          "weighted_average_common_shares_outstanding_basic_and_diluted",
+          "weighted_average_common_shares_used_in_computing_net_loss_per_share_attributable_to_common_stockholders_basic_and_diluted",
+          "weighted_average_number_of_common_shares_outstanding_basic_and_diluted_in_shares",
+          "weighted_average_number_of_common_shares_outstanding_basic_and_fully_diluted",
+          "basic_and_diluted_weighted_average_common_shares_outstanding_*",
+          "weighted_average_shares_used_to_compute_net_loss_per_share_basic_and_diluted_in_shares",
+          "weighted_average_ordinary_sharesbasic_and_diluted",
+          "weighted_average_number_of_shares_used_in_computing_net_loss_per_ordinary_share_basic_and_diluted",
+          "weighted_average_number_of_shares_outstanding_basic_and_diluted_in_shares",
+          "weighted_average_common_stock_shares_outstanding_basic_and_diluted",
+          "weighted_average_shares_outstanding_basic_and_diluted",
+          "weighted_average_shares_outstanding_basic_and_diluted_in_shares"
+        ) ~ "basic_and_diluted_shares",
+        str_detect(
+          field,
+          #REGEX
+          "basic_and_diluted.*common_shares_outstanding_in_shares"
+        ) ~ "basic_and_diluted_shares",
+        TRUE ~ field
+      )
+    )
+}
 
 fields_is_to_ignore <- function() {
-  c("")
+  c("other",
+    "other_income_net",
+    "other_expense_net",
+    "comprehensive_loss",
+    "other_income",
+    "expensed_offering_costs",
+    "other_income_expense_net",
+    "loss_on_sale_of_private_placement_warrants",
+    "total_other_income_expense",
+    "other_income_expense_net",
+    "conversion_inducement_expense",
+    "total_other_income_expense",
+    "other_income_net",
+    "other_expense_net",
+    "other_expense_income_net",
+    "other_income_loss",
+    "total_other_expense_net",
+    "other_expense_income_net",
+    "total_other_income_expense",
+    "other_income_expense",
+    "total_other_income_expense",
+    "cost_of_service_revenue",
+    "other_expense_income",
+    "taxes_other_than_income_taxes",
+    "dividends_declared_per_common_share",
+    "dividends_declared_per_common_share",
+    "total_costs_and_expenses",
+    "professional_fees",
+    "total_expenses",
+    "continuing_operations",
+    "discontinued_operations",
+    "asbestos_related_costs_benefit_net",
+    "asset_impairment_charges",
+    "total_other_expenses",
+    "total_other_income_expense",
+    "other_income_expense_net",
+    "total_other_expense_net",
+    "total_other_income_net",
+    "other_income_expense_net",
+    "total_other_income_expense"
+  )
 }
 
 
-field_patterns_is_to_ignore <- function() {
-  c("")
+# field_patterns_is_to_ignore <- function() {
+#   c("")
+# }
+
+if(!exists("is_cleaned")) {
+  is_cleaned <- map(is_files_raw, ~add_download_date(.x) %>% clean_field_names())
+  tickers_is <- is_cleaned %>% map_chr(., ~.x[1, "ticker"] %>% unlist())
+  names(is_cleaned) <- tickers_is
 }
 
-map(is_files_raw[131:140],
-    ~add_download_date(.x) %>% 
-      clean_field_names() %>% 
-      consolidate_is_field_names() %>%
+map(is_cleaned[171:180],
+    ~consolidate_is_field_names(.x) %>%
       filter(!field %in% fields_to_ignore()) %>%  
-      filter(!str_detect(field, field_patterns_is_to_ignore())) %>% 
+      # filter(!str_detect(field, field_patterns_is_to_ignore())) %>%
+      remove_leading_duplicates(field = "net_income") %>% 
       pull(field))
 
+# Common fields
+seq_is <- 1:length(is_cleaned)
 
-    
-# is_files_raw[130] %>% add_download_date() %>% clean_field_names() %>% View()
+is_cleaned_list <-
+  map(is_cleaned[seq_is],
+      ~consolidate_is_field_names(.x) %>%
+        filter(!field %in% fields_is_to_ignore()) %>%
+        # filter(!str_detect(field, field_patterns_is_to_ignore())) %>%
+        remove_leading_duplicates(field = "net_income"))
 
+is_fields_chr <- 
+  is_cleaned_list %>% 
+  map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
+  table() %>% as.data.frame() %>% rename(field = ".", n = "Freq") %>% 
+  arrange(desc(n)) %>% slice(61:90)
+
+# Find tickers with duplicate fields
+has_dups_is <- is_cleaned_list %>% map_lgl(., ~duplicated(.x$field) %>% any())
+has_dups_is[has_dups_is == TRUE] %>% names()
+
+# Inspect ticker
+ticker <- "SHO"
+
+old_fields <- 
+  # is_cleaned_list %>% .[names(.) == ticker] %>%
+  is_cleaned_list[274] %>% 
+  setNames(NULL) %>% .[[1]] %>% pull(field)
+
+new_fields <- 
+  is_cleaned_list %>% .[names(.) == ticker] %>% 
+  map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
+  setNames(NULL) %>% .[[1]]
+
+tibble(old = old_fields, new = new_fields) %>% 
+  filter(!old %in% fields_is_to_ignore()) %>% 
+  filter(!str_detect(old, field_patterns_is_to_ignore())) %>% 
+  View()
+
+
+group_1 <- is_cleaned_list %>% 
+  map_lgl(~pull(.x, field) %>% 
+        str_detect("basic_and_diluted") %>% any()) %>% 
+  which()
+group_2 <- is_cleaned_list %>% 
+  map_lgl(~pull(.x, field) %>% 
+            str_detect("^basic_and_diluted_shares$|^basic_and_diluted_eps$") %>% any()) %>% 
+  which()
+
+
+
+################################
+################################
+setdiff(group_1, group_2)
+is_cleaned[969] %>%
+  map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
+  unlist() %>% setNames(NULL)
+################################
+################################
+
+
+
+
+
+
+
+Make a reul such that if there is a field with "revenue" or "sales" in the top 3 rows of the table and there are no other fields containing these names, then call it total_revenue, if "total_revenue" and "total" don't' exist in top 3 rows
+
+Test that income_taxes is the right sign. Compute an income_taxes field (income_before_taxes - net_income) and compare.
 
 
 # To Do Later:
@@ -563,8 +756,6 @@ is_fields %>%
 ##########################
 #### BALANCE SHEET #######
 ##########################
-
-
 
 consolidate_bs_field_names <- function(df) {
   ######
@@ -890,7 +1081,6 @@ fields_bs_to_ignore_1 <- function() {
     "funds_payable_and_amounts_payable_to_customers"
   )
 }
-  
 fields_bs_to_ignore_2 <- function() {
   c("deferred_revenue_net_of_current_portion",
     "deposits_and_other_assets",
@@ -937,38 +1127,40 @@ field_patterns_bs_to_ignore <- function() {
   c("^common_stock_.*(?=shares_authorized).*(?=shares_issued)|preferred_stock.*(?=shares_authorized).*(?=issued)|other_intangible_assets.*|^total_liabilities_class.*(?=shares).*|^treasury_stock.*|common_stock.*(?=shares_issued).*(?=outstanding).*|common_stock.*(?=par_value).*(outstanding).*|common_shares.*(?=par_value).*(?=authorized).*|^preferred_stock.*(?=authorized).*(?=issued).*|preferred_stock_par.*|common_stock_shares_par.*|income_taxes_payable.*|^common_shares_authorized.*|^preferred_shares_authorized.*|common_shares_shares_issued_in_shares|^common_shares_held_in_treasury.*|^common_shares.*(?=issued).*|^reinsurance.*|preferred_stock_authorized.*|preferred_stock_issued.*|^accrued_interest.*|^deferred_income_taxes.*|preferred_stock_.*_shares_outstanding|^treasury_shares.*|^par_value.*|^accumulated.*income_loss|^preferred_stock.*(?=outstanding)")
 }
 
-map(bs_files_raw[111:120],
-    ~add_download_date(.x) %>% 
-      clean_field_names() %>% 
+if(!exists("bs_cleaned")) {
+  bs_cleaned <- map(bs_files_raw, ~add_download_date(.x) %>% clean_field_names())
+  tickers_bs <- bs_cleaned %>% map_chr(., ~.x[1, "ticker"] %>% unlist())
+  names(bs_cleaned) <- tickers_bs
+}
+
+map(bs_cleaned[111:120],
+    ~consolidate_bs_field_names(.x) %>%
       filter(!field %in% fields_bs_to_ignore_1()) %>%  
       filter(!field %in% fields_bs_to_ignore_2()) %>% 
-      filter(!str_detect(field, field_patterns_bs_to_ignore())) %>% 
-      consolidate_bs_field_names() %>%
+      filter(!str_detect(field, field_patterns_bs_to_ignore())) %>%
       pull(field))
 
 
 # Common fields
-seq_bs <- 1:500
+seq_bs <- 1:length(bs_cleaned)
 
 all_bs_fields <-
-  map(bs_files_raw[seq_bs],
-    ~add_download_date(.x) %>% 
-      clean_field_names() %>% 
+  map(bs_cleaned[seq_bs],
+    ~consolidate_bs_field_names(.x) %>%
       filter(!field %in% fields_bs_to_ignore_1()) %>%  
       filter(!field %in% fields_bs_to_ignore_2()) %>% 
       filter(!str_detect(field, field_patterns_bs_to_ignore())) %>% 
-      consolidate_bs_field_names() %>%
       pull(field)) %>% 
   unlist()
 
+all_bs_fields %>% table() %>% as.data.frame() %>% 
+  rename(field = ".", n = "Freq") %>% 
+  arrange(desc(n)) %>% slice(1:60)
 
-all_bs_fields %>% table() %>% as_tibble() %>% arrange(desc(n)) %>% head(20)
+# Find tickers with duplicate fields
+has_dups_bs <- bs_cleaned %>% map_lgl(., ~duplicated(.x$field) %>% any())
+has_dups_bs[has_dups_bs == TRUE] %>% names()
 
-all_bs_fields[(pct_occur_bs > 0.3) %>% which()]
-
-
-
-# bs_files_raw[18] %>% add_download_date() %>% clean_field_names() %>% View()
 
 # !!! Later compute cash_and_short_term_investments if not available and both items exist separately
 
@@ -991,7 +1183,6 @@ If not, then can choose to addd it later to create adjusted_long_term_debt
 #### CASH FLOWS #######
 #######################
 
-
 consolidate_cf_field_names <- function(df) {
   ######
   # df <- cf_files_raw[1] %>% add_download_date() %>% clean_field_names()
@@ -1011,8 +1202,28 @@ consolidate_cf_field_names <- function(df) {
           "depreciation_and_amortization",
           "provision_for_depreciation_depletion_and_amortization",
           "depreciation_depletion_and_amortization",
-          "depreciation_amortization_and_accretion"
+          "depreciation_amortization_and_accretion",
+          "depreciation_and_amortization_expense",
+          "depreciation_and_amortization_of_property_and_equipment"
         ) ~ "depreciation_amortization",
+        field %in% c(
+          "depreciation_expense"
+        ) ~ "depreciation",
+        field %in% c(
+          "amortization_of_intangible_assets",
+          "amortization_of_deferred_financing_costs",
+          "amortization_of_debt_issuance_costs",
+          "amortization_of_right_of_use_assets",
+          "amortization_of_intangibles",
+          "amortization_of_debt_discount_and_issuance_costs",
+          "amortization_of_operating_lease_right_of_use_assets"
+        ) ~ "amortization",
+        field %in% c(
+          "share_based_compensation_expense",
+          "share_based_compensation",
+          "equity_based_compensation",
+          "stock_compensation_expense"
+        ) ~ "stock_based_compensation",
         field %in% c(
           "net_cash_used_in_operating_activities",
           "net_cash_from_used_in_continuing_operations",
@@ -1023,7 +1234,10 @@ consolidate_cf_field_names <- function(df) {
           "net_cash_provided_by_operating_activities",
           "net_cash_provided_by_used_for_operating_activities",
           "net_cash_from_operating_activities",
-          "net_cash_flows_used_in_operations"
+          "net_cash_flows_used_in_operations",
+          "net_cash_used_by_operating_activities",
+          "net_cash_used_in_provided_by_operating_activities",
+          "net_cash_flows_from_operating_activities"
         ) ~ "operating_cash_flows" ,
       #   field %in% c(
       #   ) ~ "",
@@ -1036,14 +1250,25 @@ consolidate_cf_field_names <- function(df) {
           "acquisitions_of_property_and_equipment",
           "purchases_of_property_plant_and_equipment",
           "additions_to_property_plant_and_equipment",
-          "purchases_of_premises_and_equipment"
-        ) ~ "purchases_of_property_plant_and_equipment",
+          "purchases_of_premises_and_equipment",
+          "acquisition_of_property_and_equipment",
+          "purchases_of_fixed_assets",
+          "purchase_of_property_and_equipment",
+          "payments_for_capital_expenditures",
+          "expenditures_for_property_plant_and_equipment_and_capitalized_software",
+          "cash_paid_for_capital_expenditures",
+          "acquisition_of_property_plant_and_equipment"
+        ) ~ "purchases_of_property_and_equipment",
         field %in% c(
           "proceeds_from_dispositions_of_property_plant_and_equipment",
           "proceeds_from_the_sale_of_assets",
           "proceeds_from_sale_of_premises_and_equipment",
-          "proceeds_from_disposition_of_property_and_other_assets"
-        ) ~ "sales_of_property_plant_and_equipment",
+          "proceeds_from_disposition_of_property_and_other_assets",
+          "proceeds_from_the_sale_of_property_and_equipment",
+          "proceeds_from_disposal_of_property_and_equipment",
+          "proceeds_from_sales_of_premises_and_equipment",
+          "proceeds_from_sale_of_property_plant_and_equipment"
+        ) ~ "sales_of_property_and_equipment",
       
       field %in% c(
           "net_cash_used_in_investing_activities",
@@ -1056,28 +1281,47 @@ consolidate_cf_field_names <- function(df) {
           "net_cash_used_for_investing_activities",
           "net_cash_provided_by_used_in_investing_activities",
           "net_cash_used_for_provided_by_investing_activities",
-          "net_cash_required_by_investing_activities"
+          "net_cash_required_by_investing_activities",
+          "net_cash_used_in_provided_by_investing_activities",
+          "net_cash_flows_provided_by_used_in_investing_activities",
+          "net_cash_provided_used_by_investing_activities",
+          "net_cash_flows_from_investing_activities",
+          "net_cash_used_by_investing_activities"
         ) ~ "investing_cash_flows",
       field %in% c(
         "proceeds_from_shares_issued_under_stock_plans",
         "proceeds_from_common_stock_offering_net",
         "proceeds_from_the_issuance_of_common_stock",
-        "proceeds_from_issuance_of_common_stock_net_of_issuance_costs"
-      ) ~ "proceeds_from_basic_shares_issued",
+        "proceeds_from_issuance_of_common_stock_net_of_issuance_costs",
+        "proceeds_from_issuance_of_common_stock",
+        "proceeds_from_issuance_of_shares",
+        "issuance_of_common_stock"
+      ) ~ "proceeds_from_issuance_of_basic_shares",
       field %in% c(
         "purchases_of_common_stock",
         "repurchase_of_common_stock",
-        "purchases_of_common_shares"
+        "purchases_of_common_shares",
+        "payments_to_repurchase_common_stock",
+        "purchases_of_shares"
       ) ~ "repurchases_of_basic_shares",
       str_detect(field, # REGEX
                  "^repurchases_of_common_stock.*"
       ) ~ "repurchases_of_basic_shares",
       field %in% c(
-      "proceeds_from_issuance_of_long_term_debt"
+      "proceeds_from_issuance_of_long_term_debt",
+      "proceeds_from_borrowings_on_debt",
+      "borrowings_on_long_term_debt",
+      "proceeds_from_borrowings",
+      "proceeds_from_long_term_borrowings",
+      "proceeds_from_notes_payable"
       ) ~ "proceeds_from_issuance_of_debt",
       field %in% c(
         "repayments_on_debt",
-        "payments_to_retire_debt"
+        "payments_to_retire_debt",
+        "payment_of_long_term_debt",
+        "repayments_on_long_term_borrowings",
+        "repayments_of_long_term_borrowings",
+        "principal_payments_on_long_term_debt"
       ) ~ "repayments_of_debt",
         field %in% c(
           "cash_used_in_provided_by_financing_activities",
@@ -1092,7 +1336,10 @@ consolidate_cf_field_names <- function(df) {
           "net_cash_used_in_provided_by_financing_activities",
           "net_cash_used_in_provided_by_financing_activities",
           "net_cash_flows_provided_by_financing_activities",
-          "net_cash_provided_by_required_by_financing_activities"
+          "net_cash_provided_by_required_by_financing_activities",
+          "net_cash_flows_from_financing_activities",
+          "net_cash_used_for_provided_by_financing_activities",
+          "net_cash_provided_used_by_financing_activities"
           ) ~ "financing_cash_flows",
         field %in% c(
           "consolidated_cash_and_cash_equivalents_end_of_the_period",
@@ -1105,7 +1352,18 @@ consolidate_cf_field_names <- function(df) {
           "cash_and_cash_equivalents_end_of_the_quarter",
           "cash_and_cash_equivalents_end_of_year",
           "cash_at_end_of_period",
-          "cash_at_end_of_the_period"
+          "cash_at_end_of_the_period",
+          "cash_cash_equivalents_and_restricted_cash_at_end_of_period",
+          "cash_cash_equivalents_and_restricted_cash_at_the_end_of_period",
+          "cash_and_cash_equivalents_at_end_of_year",
+          "cash_end_of_period",
+          "cash_cash_equivalents_and_restricted_cash_end_of_period",
+          "cash_ending",
+          "cash_and_cash_equivalents_at_end_of_the_period",
+          "cash_and_cash_equivalentsend_of_period",
+          "cash_and_cash_equivalents_ending",
+          "total_cash_cash_equivalents_and_restricted_cash",
+          "cash_end_of_the_period"
         ) ~ "cash",
       field %in% c(
         "decrease_increase_in_cash_and_cash_equivalents",
@@ -1120,7 +1378,20 @@ consolidate_cf_field_names <- function(df) {
         "increase_decrease_in_cash_and_cash_equivalents",
         "increase_decrease_in_cash_and_cash_equivalents_including_cash_classified_within_current_assets_held_for_sale",
         "net_decrease_increase_in_cash_cash_equivalents_and_restricted_cash",
-        "net_change_in_cash_cash_equivalents_and_restricted_cash"
+        "net_change_in_cash_cash_equivalents_and_restricted_cash",
+        "net_change_in_cash",
+        "net_decrease_in_cash_cash_equivalents_and_restricted_cash",
+        "net_increase_decrease_in_cash_and_cash_equivalents_and_restricted_cash",
+        "increase_decrease_in_cash_and_restricted_cash",
+        "net_decrease_in_cash_and_cash_equivalents",
+        "net_increase_in_cash_cash_equivalents_and_restricted_cash",
+        "net_decrease_in_cash",
+        "change_in_cash_cash_equivalents_and_restricted_cash",
+        "net_increase_in_cash_and_cash_equivalents_and_restricted_cash",
+        "net_decrease_increase_in_cash",
+        "net_increase_decrease_in_cash",
+        "net_increase_in_cash",
+        "increase_in_cash_and_cash_equivalents"
       ) ~ "change_in_cash",
       field %in% c(
         "cash_and_cash_equivalents_at_beginning_of_period",
@@ -1129,8 +1400,22 @@ consolidate_cf_field_names <- function(df) {
         "cash_cash_equivalents_and_restricted_cash_beginning_of_period",
         "cash_cash_equivalents_and_restricted_cash_at_beginning_of_period",
         "cash_and_cash_equivalents_beginning_of_period",
-        "cash_and_cash_equivalents_at_the_beginning_of_period"
+        "cash_and_cash_equivalents_at_the_beginning_of_period",
+        "cash_and_restricted_cash_beginning_of_year",
+        "cash_at_beginning_of_period",
+        "cash_beginning_of_period",
+        "cash_cash_equivalents_and_restricted_cash_at_beginning_of_the_period",
+        "cash_cash_equivalents_and_restricted_cash_at_start_of_period",
+        "cash_beginning_of_the_period"
       ) ~ "cash_beginning",
+      field %in% c(
+        "effect_of_exchange_rate_changes_on_cash",
+        "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents",
+        "effect_of_currency_exchange_rate_changes_on_cash_cash_equivalents_and_restricted_cash"
+      ) ~ "exchange_rate_effects",
+      str_detect(field, # REGEX
+        "effect(s?)_of_exchange_rate_changes.*"
+      ) ~ "exchange_rate_effects",
         TRUE ~ field
       )
       # field = rename_field_with_prior(
@@ -1237,7 +1522,107 @@ fields_cf_to_ignore_3 <- function() {
     "net_change_in_deposits",
     "net_increase_decrease_in_other_assets",
     "net_gains_on_sale_of_sba_loans",
-    "donated_securities"
+    "donated_securities",
+    "net_increase_decrease_in_other_assets",
+    "net_increase_decrease_in_accrued_expenses_and_other_liabilities",
+    "tenant_receivable_related_party",
+    "operating_lease_liability",
+    "related_party_payables",
+    "other_payables",
+    "option_expense",
+    "interest_and_other_receivables",
+    "operating_lease_right_of_use_assets",
+    "increase_decrease_in_other_assets",                        
+    "increase_decrease_in_receivables",
+    "increase_decrease_in_other_current_assets",
+    "increase_decrease_in_advance_billings",
+    "increase_decrease_in_accrued_liabilities",
+    "cash_paid_received_for_taxes",
+    "other_non_cash_income_and_expenses",
+    "deferred_tax",
+    "increase_in_inventory",
+    "decrease_in_deferred_revenue",
+    "decrease_in_operating_lease_liability",
+    "noncash_interest_expense",
+    "deferred_contract_acquisition_costs",
+    "deferred_revenue_and_due_to_customers",
+    "premiums_receivable",
+    "deferred_acquisition_costs",
+    "reinsurance_balances_payable",
+    "other_items_net",
+    "increase_in_inventory",
+    "decrease_in_deferred_revenue",
+    "decrease_in_operating_lease_liability"
+  )
+}
+fields_cf_to_ignore_4 <- function() {
+  c("investment_in_unconsolidated_joint_ventures",
+    "return_of_investment_in_unconsolidated_joint_ventures",
+    "distribution_of_earnings_from_unconsolidated_joint_ventures",
+    "interest_earned_on_investment_held_in_trust_account",
+    "prepaid_assets",
+    "state_franchise_tax_accrual",
+    "contract_liabilities",
+    "other_long_term_liabilities",
+    "payments_of_offering_costs",
+    "other_current_and_noncurrent_assets_and_liabilities",
+    "gain_on_property_dispositions_and_impairment_losses_net",
+    "lifo_expense",
+    "accrued_liabilities_other",
+    "accrued_clinical_liabilities",
+    "accrued_clinical_liabilities",
+    "non_cash_royalty_revenue_related_to_royalty_monetization",
+    "revaluation_of_contingent_consideration",
+    "change_in_acquired_contingent_consideration_obligation",
+    "non_cash_royalty_revenue",
+    "deferred_tax_provision_benefit",
+    "change_in_derivative_liability",
+    "decrease_in_accounts_receivable",
+    "increase_decrease_in_prepaid_expenses_and_other_current_assets",
+    "decrease_in_accounts_payable_accrued_expenses_and_other_current_liabilities",
+    "decrease_in_other_non_current_liabilities",
+    "net_amortization_of_investment_securities_premiums",
+    "decrease_increase_in_accrued_interest_receivable",
+    "decrease_in_accrued_interest_payable",
+    "mortgage_loans_originated_for_sale",
+    "proceeds_from_sales_of_loans_originated_for_sale",
+    "increase_in_deferred_tax_expense",
+    "increase_in_other_liabilities",
+    "deferred_tax_expense_benefit",
+    "other_current_and_non_current_assets",
+    "deferred_revenues_current_and_non_current",
+    "accrued_payroll_and_related_benefits",
+    "other_current_and_non_current_liabilities",
+    "other_accrued_liabilities"
+  )
+}
+fields_cf_to_ignore_5 <- function() {
+  c(
+    #(includes pay-in-kind and capitalized interest expense amortization)
+    "non_cash_interest_expense", 
+    "contract_assets",
+    "inventories_net",
+    "loss_on_extinguishment_of_debt",
+    "lease_liabilities",
+    "other_current_liabilities",
+    "bad_debt_expense",
+    "accrued_interest",
+    "deferred_income_tax_benefit",
+    "deferred_income_tax_expense_benefit",
+    "net_increase_in_deposits",
+    "other_current_liabilities",
+    "bad_debt_expense",
+    "accrued_interest",
+    "other_non_cash_items",
+    "accrued_and_other_liabilities",
+    "noncash_lease_expense",
+    "other_financing_activities_net",
+    "other_investing_activities_net",
+    "distributions_to_noncontrolling_interests",
+    "loss_on_disposal_of_property_and_equipment",
+    "accrued_interest_receivable",
+    "customer_deposits",
+    "income_tax_payable"
   )
 }
 
@@ -1247,35 +1632,48 @@ field_patterns_cf_to_ignore <- function() {
 }
 
 
-map(cf_files_raw[41:50],
-    ~add_download_date(.x) %>% 
-      clean_field_names() %>% 
-      consolidate_cf_field_names() %>%
+if(!exists("cf_cleaned")) {
+  cf_cleaned <- map(cf_files_raw, ~add_download_date(.x) %>% clean_field_names())
+  tickers_cf <- cf_cleaned %>% map_chr(., ~.x[1, "ticker"] %>% unlist())
+  names(cf_cleaned) <- tickers_cf
+}
+
+map(cf_cleaned[81:90],
+    ~consolidate_cf_field_names(.x) %>%
       filter(!field %in% fields_cf_to_ignore_1()) %>%
       filter(!field %in% fields_cf_to_ignore_2()) %>%
-      # filter(!field %in% fields_cf_to_ignore_3()) %>%
+      filter(!field %in% fields_cf_to_ignore_3()) %>%
+      filter(!field %in% fields_cf_to_ignore_4()) %>%
+      filter(!field %in% fields_cf_to_ignore_5()) %>%
       filter(!str_detect(field, field_patterns_cf_to_ignore())) %>%
       pull(field))
 
 # Common fields
-seq_cf <- 1:500
+seq_cf <- 1:length(cf_cleaned)
 
-all_fields_cf <-
-  map(cf_files_raw[seq_cf],
-      ~add_download_date(.x) %>% 
-        clean_field_names() %>% 
-        consolidate_cf_field_names() %>%
+
+all_cf_fields <-
+  map(cf_cleaned[seq_cf],
+      ~consolidate_cf_field_names(.x) %>%
         filter(!field %in% fields_cf_to_ignore_1()) %>%
         filter(!field %in% fields_cf_to_ignore_2()) %>%
-        filter(!str_detect(field, field_patterns_cf_to_ignore())) %>% 
+        filter(!field %in% fields_cf_to_ignore_3()) %>%
+        filter(!field %in% fields_cf_to_ignore_4()) %>%
+        filter(!field %in% fields_cf_to_ignore_5()) %>%
+        filter(!str_detect(field, field_patterns_cf_to_ignore())) %>%
         pull(field)) %>% 
   unlist()
 
-pct_occur_cf <- 
-  {all_fields_cf %>% as.factor() %>% tabulate()} / length(seq_cf)
+all_cf_fields %>% table() %>% as.data.frame() %>% 
+  rename(field = ".", n = "Freq") %>% 
+  arrange(desc(n)) %>% slice(1:60)
 
-all_fields_cf[(pct_occur_cf > 0.03) %>% which()]
-# 0.05 --> 3 result
+# Find tickers with duplicate fields
+has_dups_cf <- cf_cleaned %>% map_lgl(., ~duplicated(.x$field) %>% any())
+has_dups_cf[has_dups_cf == TRUE] %>% names()
+  
+
+
 
 
 
@@ -1286,10 +1684,10 @@ consolidate them into one if there isn't' a total
 !!!! sometimes there are multiple instances of a changed field. Find tickers with duplicate fields to see where the field name changes were innappopriate
 
 
+If there is a depreciation field but no amortization field, then call it depreciation_amortization, and vice-versa
 
 
-
-
+sometimes, "end_of_period" or "end_of_the_period" exists and likely represents "cash". If it exists after "financing_cash_flows" and "cash" doesn't' already exist, convert to "cash"
 
 
 
@@ -1371,22 +1769,12 @@ get_cleaned_data <- function(files) {
 }
 
 
-!!!! Identify tickers without common field names
 
-tickers_wo_key_fields <- NULL
-key_fields <- c("total_revenue",
-                "net_sales",
-                "total_revenues_and_other_income",
-                "gross_profit",
-                "operating_income", 
-                "earnings_before_provision_for_income_taxes"
-                "income_before_income_taxes",
-                "income_loss_before_income_taxes" (COP)
-                "net_earnings",
-                "net_income",
-                "net_income_loss", (COP)
-                "net_income_attributable_to_common_stockholders"
-                )
+
+
+
+
+
 
 # Example cleaning code
 basic_id <-
@@ -1416,22 +1804,6 @@ if(length(basic_id) == 2) {
         is_df_tmp[diluted_id[2], "field"] <- "Diluted shares"
     }
 
-
-
-
-
-
-
-
-
-
-basic_weighted_average_common_shares --> basic_shares
-basic_earnings_per_share --> basic_eps
-
-ticker: COP
-Net Income (Loss) Attributable to ConocoPhilips
-Basic  1.78
-Basic 1,3332,000,000
 
 
 
