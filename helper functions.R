@@ -208,10 +208,199 @@ remove_leading_duplicates <- function(x, field = NULL) {
     }
 }
 
-is_cleaned %>% .[names(.) == "ITT"] %>% setNames(NULL) %>% .[[1]] %>%
-        consolidate_is_field_names() %>%
-        remove_leading_duplicates(., field = "net_income") %>%
-    pull(field)
+# is_cleaned %>% .[names(.) == "ITT"] %>% setNames(NULL) %>% .[[1]] %>%
+#         consolidate_is_field_names() %>%
+#         remove_leading_duplicates(., field = "net_income") %>%
+#     pull(field)
+
+
+
+
+
+
+split_basic_and_diluted_eps <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "SLDB"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names()
+    ########
+    
+    fields <- x %>% pull(field)
+    
+    if(!"basic_and_diluted_eps" %in% fields) return(x)
+    field_id <- str_detect(fields, "^basic_and_diluted_eps$") %>% which()
+    if((field_id %>% length()) > 1) return(x)
+
+    basic_and_diluted_eps <- slice(x, field_id)
+    x_adj <- slice(x, -field_id)
+    
+    cleaned_eps <- rbind(basic_and_diluted_eps, basic_and_diluted_eps) %>% 
+        mutate(field = c("basic_eps", "diluted_eps"))
+        
+    return(x_adj %>% rbind(cleaned_eps))
+}
+
+# split_basic_and_diluted_eps(x) %>% View()
+
+
+split_basic_and_diluted_shares <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "RCAT"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names()
+    ########
+    
+    fields <- x %>% pull(field)
+    
+    if(!"basic_and_diluted_shares" %in% fields) return(x)
+    field_id <- str_detect(fields, "^basic_and_diluted_shares$") %>% which()
+    if((field_id %>% length()) > 1) return(x)
+    
+    basic_and_diluted_shares <- slice(x, field_id)
+    x_adj <- slice(x, -field_id)
+    
+    cleaned_shares <- rbind(basic_and_diluted_shares, basic_and_diluted_shares) %>% 
+        mutate(field = c("basic_shares", "diluted_shares"))
+    
+    return(x_adj %>% rbind(cleaned_shares))
+}
+ 
+# x %>% 
+#     split_basic_and_diluted_eps() %>% 
+#     split_basic_and_diluted_shares() %>% 
+#     View()
+   
+    
+# If there is one amortization field and one depreciation field and no amortization_depreciation field,
+# then combine them and make depreciation_amortization
+consolidate_dep_amor <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "BCOR"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names()
+    ########
+    
+    if(is.null(x)) return(x)
+    ticker <- x %>% pull(ticker) %>% first()
+    fields <- x %>% pull(field)
+    download_date <- x %>% pull(download_date) %>% first()
+    
+    if (str_detect(fields, "^depreciation_amortization$") %>% any())
+        return(x)
+    
+    dep_id <- str_detect(fields, "^depreciation$") %>% which()
+    amor_id <- str_detect(fields, "^amortization$") %>% which()
+    
+    if (length(dep_id) != 1 | length(amor_id) != 1) # If there is onlly one dep field and one amort field, then combine
+        return(x)
+    if (dep_id != amor_id) {
+        dep_amor <-
+            x %>% slice(c(dep_id, amor_id)) %>%
+            summarize(across(-c(ticker, field, download_date), ~ sum(.x, na.rm = TRUE))) %>%
+            add_column(ticker = ticker,
+                       field = "depreciation_amortization",
+                       download_date = download_date) %>%
+            select(ticker, field, everything()) %>%
+            select(everything(), download_date)
+        return(x %>% slice(-dep_id, -amor_id) %>% rbind(dep_amor))
+    }
+}
+
+# consolidate_dep_amor(x) %>% View()
+
+
+consolidate_sga <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "QUMU"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names()
+    ########
+    
+    if(is.null(x)) return(x)
+    ticker <- pull(x, ticker) %>% first()    
+    fields <- pull(x, field)
+    download_date <- pull(x, download_date) %>% first()
+    
+    if(str_detect(fields, "^selling_general_administrative$") %>% any()) return(x)
+    
+    sell_id <- str_detect(fields, "^selling_expense$") %>% which()
+    admin_id <- str_detect(fields, "^general_administrative_expense$") %>% which()
+    
+    if(length(sell_id) > 1 | length(admin_id) > 1) return(x)
+    if(sell_id != admin_id) {
+        sga <-
+            x %>% slice(c(sell_id, admin_id)) %>%
+            summarize(across(-c(ticker, field, download_date), ~sum(.x, na.rm = TRUE))) %>% 
+            add_column(
+                ticker = ticker,
+                field = "selling_general_administrative",
+                download_date = download_date
+            ) %>% 
+            select(ticker, field, everything()) %>% 
+            select(everything(), download_date)
+        return(x %>% slice(-sell_id, -admin_id) %>% rbind(sga))
+    }
+}
+
+# consolidate_sga(x) %>% View()
+
+consolidate_amor <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "QUMU"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names()
+    ########
+    
+    if(is.null(x)) return(x)
+    ticker <- x %>% pull(ticker) %>% first()
+    fields <- x %>% pull(field)
+    download_date <- x %>% pull(download_date) %>% first()
+    
+    if (str_detect(fields, "depreciation") %>% any())
+        return(x)
+    
+    amor_id <- str_detect(fields, "^amortization$") %>% which()
+    
+    if (length(amor_id) != 1 ) {
+        return(x)
+    } else {
+        amor <-
+            x %>% slice(amor_id) %>% 
+            mutate(field = "depreciation_amortization")
+        
+        return(x %>% slice(-amor_id) %>% rbind(amor))
+    }
+}
+
+# consolidate_amor(x) %>% View()
+
+consolidate_dep <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "QUMU"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names()
+    ########
+    
+    if(is.null(x)) return(x)
+    ticker <- x %>% pull(ticker) %>% first()
+    fields <- x %>% pull(field)
+    download_date <- x %>% pull(download_date) %>% first()
+    
+    if (str_detect(fields, "amortization") %>% any())
+        return(x)
+    
+    dep_id <- str_detect(fields, "^depreciation$") %>% which()
+    
+    if (length(dep_id) != 1 ) {
+        return(x)
+    } else {
+        dep <-
+            x %>% slice(dep_id) %>% 
+            mutate(field = "depreciation_amortization")
+        
+        return(x %>% slice(-dep_id) %>% rbind(dep))
+    }
+}
+
+
+
+
+
+if basic_shares and diluted_shares exist and are equal, but only diluted_shares or basic_shares exist, create the other
+
+
+# If this pattern exists and related fields don't already exist, 
+# split the second field and create shares_basic, shares_diluted
+[19] "basic_and_diluted_eps"                                
+[20] "number_of_shares_outstanding" 
 
 
 
