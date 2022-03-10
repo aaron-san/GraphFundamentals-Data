@@ -318,7 +318,7 @@ consolidate_sga <- function(x) {
     sell_id <- str_detect(fields, "^selling_expense$") %>% which()
     admin_id <- str_detect(fields, "^general_administrative_expense$") %>% which()
     
-    if(length(sell_id) > 1 | length(admin_id) > 1) return(x)
+    if(length(sell_id) != 1 | length(admin_id) != 1) return(x)
     if(sell_id != admin_id) {
         sga <-
             x %>% slice(c(sell_id, admin_id)) %>%
@@ -335,6 +335,67 @@ consolidate_sga <- function(x) {
 }
 
 # consolidate_sga(x) %>% View()
+
+consolidate_selling_expense <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "QUMU"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names() %>% 
+        # filter(field != "general_administrative_expense")
+    ########
+    
+    if(is.null(x)) return(x)
+    ticker <- pull(x, ticker) %>% first()    
+    fields <- pull(x, field)
+    download_date <- pull(x, download_date) %>% first()
+    
+    if(str_detect(fields, "administrative") %>% any()) return(x)
+    
+    sell_id <- str_detect(fields, "^selling_expense$") %>% which()
+    
+    if(length(sell_id) != 1) {
+        return(x)  
+    } else {
+        return(
+            x %>%
+                mutate(field = str_replace_all(field, "selling_expense", "selling_general_administrative"))
+        )
+    }
+}
+
+# consolidate_selling_expense(x) %>% pull(field)
+
+# Assumes that the only "selling_general_administrative" components are "selling_expense" and "general_administrative_expense" 
+# (what about research_and_development?)
+# "R&D costs are not included in SGA" (-Investopedia)
+
+
+consolidate_general_administrative <- function(x) {
+    ########
+    # x <- is_cleaned %>% .[names(.) == "QUMU"] %>% setNames(NULL) %>% .[[1]] %>% consolidate_is_field_names() %>%
+        # filter(field != "selling_expense")
+    ########
+    
+    if(is.null(x)) return(x)
+    ticker <- pull(x, ticker) %>% first()    
+    fields <- pull(x, field)
+    download_date <- pull(x, download_date) %>% first()
+    
+    if(str_detect(fields, "selling") %>% any()) return(x)
+    
+    admin_id <- str_detect(fields, "^general_administrative_expense$") %>% which()
+    
+    if(length(admin_id) != 1) {
+        return(x)  
+    } else {
+        return(
+            x %>%
+                mutate(field = str_replace_all(field, "general_administrative_expense", "selling_general_administrative"))
+        )
+    }
+}
+
+# consolidate_general_administrative(x) %>% pull(field)
+
+
 
 consolidate_amor <- function(x) {
     ########
@@ -362,7 +423,7 @@ consolidate_amor <- function(x) {
     }
 }
 
-# consolidate_amor(x) %>% View()
+# consolidate_amor(x) %>% pull(field)
 
 consolidate_dep <- function(x) {
     ########
