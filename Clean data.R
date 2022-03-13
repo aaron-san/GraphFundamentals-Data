@@ -986,6 +986,7 @@ is_fields_chr %>% slice(1:90)
 ################################
 
 
+
 is_fields_to_keep <-
     is_fields_chr %>% mutate(pct = round(n / max(n), 2)) %>% 
     filter(pct > 0.03) %>% 
