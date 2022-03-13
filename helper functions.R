@@ -455,13 +455,13 @@ consolidate_dep <- function(x) {
 
 
 
-if basic_shares and diluted_shares exist and are equal, but only diluted_shares or basic_shares exist, create the other
+# if basic_shares and diluted_shares exist and are equal, but only diluted_shares or basic_shares exist, create the other
 
 
 # If this pattern exists and related fields don't already exist, 
 # split the second field and create shares_basic, shares_diluted
-[19] "basic_and_diluted_eps"                                
-[20] "number_of_shares_outstanding" 
+# [19] "basic_and_diluted_eps"                                
+# [20] "number_of_shares_outstanding" 
 
 
 

@@ -196,7 +196,8 @@ consolidate_is_field_names <- function(df) {
                     "direct_cost_of_revenues_exclusive_of_depreciation_and_amortization",
                     "direct_costs_excluding_depreciation_and_amortization",
                     "total_costs_of_revenue",
-                    "total_cost_of_revenues"
+                    "total_cost_of_revenues",
+                    "total_cost_of_goods_sold"
                 ) ~ "cost_of_revenue",
                 str_detect(field, #REGEX
                            "(total)?cost_of_sales_including_.*|costs?_of_(products_sold|goods_sold|operations|sales|(net_)?revenues?|product_revenues?|product_sales|services).*(?=exclusive_of_depreciation|excluding_depreciation|exclusive_of_amortization|excluding_amortization).*"
@@ -206,7 +207,6 @@ consolidate_is_field_names <- function(df) {
                     "gross_loss",
                     "gross_loss_profit",
                     "total_gross_profit",
-                    "gross_profit_loss",
                     "gross_profit_loss"
                 ) ~ "gross_profit",
                 field %in% c("research_and_development_expenses") ~ "research_and_development",
@@ -234,7 +234,9 @@ consolidate_is_field_names <- function(df) {
                     "compensation",
                     "salaries_and_wages",
                     "salaries_and_employee_benefits",
-                    "compensation_and_benefits"
+                    "compensation_and_benefits",
+                    "salaries_and_benefits",
+                    "compensation_and_employee_benefits"
                 ) ~ "salaries_and_wages",
                 field %in% c(
                     "sales_and_marketing",
@@ -249,7 +251,8 @@ consolidate_is_field_names <- function(df) {
                     "sales_and_marketing_expenses"
                 ) ~ "selling_expense",
                 field %in% c(
-                    "research_and_development_expense"
+                    "research_and_development_expense",
+                    "product_development"
                 ) ~ "research_and_development",
                 field %in% c(
                     "depreciation_amortization_depletion_and_accretion",
@@ -308,7 +311,10 @@ consolidate_is_field_names <- function(df) {
                     "total_operating_expense",
                     "operating_and_formation_costs",
                     "total_noninterest_expenses",
-                    "total_costs_and_operating_expenses"
+                    "total_costs_and_operating_expenses",
+                    "total_noninterest_expense",
+                    "total_non_interest_expense",
+                    "total_non_interest_expenses"
                 ) ~ "total_operating_expenses",
                 field %in% c(
                     "income_from_operations",
@@ -324,9 +330,7 @@ consolidate_is_field_names <- function(df) {
                     "earnings_loss_before_interest_and_income_taxes",
                     "net_operating_loss",
                     "operating_loss_income",
-                    "operating_profit",
-                    "total_noninterest_expense",
-                    "total_non_interest_expense"
+                    "operating_profit"
                 ) ~ "operating_income",
                 field %in% c(
                     "total_interest_expense",
@@ -406,7 +410,8 @@ consolidate_is_field_names <- function(df) {
                     "income_tax_benefit",
                     "provision_for_income_tax",
                     "benefit_from_income_taxes",
-                    "income_tax_benefit_provision"
+                    "income_tax_benefit_provision",
+                    "income_tax_expense"
                 ) ~ "income_taxes",
                 field %in% c(
                     "net_income",
@@ -414,32 +419,60 @@ consolidate_is_field_names <- function(df) {
                     "net_income_loss",
                     "net_loss",
                     "net_loss_income",
-                    "net_earnings",
-                    "net_income_available_to_common_shareholders"
+                    "net_earnings"
                 ) ~ "net_income",
-                str_detect(
-                    field,
-                    "net_income_loss_attributable_to(?!.*_per_).*|net_loss_attributable_to(?!.*_per_).*|net_income_attributable_to(?!.*_per_).*"
-                ) ~ "net_income",
+                # str_detect(
+                    # field,
+                    # "net_income_loss_attributable_to(?!.*_per_).*|net_loss_attributable_to(?!.*_per_).*|net_income_attributable_to(?!.*_per_).*"
+                # ) ~ "net_income",
                 field %in% c(
                     "income_from_continuing_operations_before_income_taxes",
-                    "income_loss_from_continuing_operations_before_income_taxes"
+                    "income_loss_from_continuing_operations_before_income_taxes",
+                    "loss_from_continuing_operations_before_income_taxes"
                 ) ~ "income_from_continuing_operations_before_taxes",
                 field %in% c(
                     "loss_from_continuing_operations",
                     "income_loss_from_continuing_operations",
                     "net_income_loss_from_continuing_operations",
                     "net_income_from_continuing_operations"
-                ) ~ "income_from_continuing_operations",
+                ) ~ "net_income_from_continuing_operations",
+                
+                field %in% c(
+                    "income_loss_from_discontinued_operations_net_of_tax",
+                    "income_loss_from_discontinued_operations",
+                    "loss_from_discontinued_operations"
+                ) ~ "net_income_from_discontinued_operations",
+                
+                field %in% c(
+                    "net_income_available_to_common_stockholders",
+                    "net_income_available_to_common_shareholders",
+                    "net_income_loss_attributable_to_common_shareholders",
+                    "net_income_loss_attributable_to_common_stockholders",
+                    "net_loss_attributable_to_common_stockholders"
+                ) ~ "net_income_available_to_common_shareholders",
+                
                 field %in% c(
                     "foreign_currency_translation_adjustment",
                     "foreign_currency_translation_adjustments",
-                    "foreign_currency_translation"
+                    "foreign_currency_translation",
+                    "foreign_currency_translation_gain_loss"
                 ) ~ "foreign_currency_translation_adjustment",
                 field %in% c("comprehensive_income",
                              "comprehensive_income_loss",
-                             "total_comprehensive_loss"
+                             "total_comprehensive_loss",
+                             "comprehensive_loss_income"
                 ) ~ "comprehensive_income",
+                field %in% c(
+                    "less_net_income_loss_attributable_to_noncontrolling_interests",
+                    "less_net_income_attributable_to_noncontrolling_interest",
+                    "less_net_income_attributable_to_non_controlling_interests",
+                    "net_income_attributable_to_non_controlling_interests",
+                    "net_loss_attributable_to_noncontrolling_interest",
+                    "net_income_loss_attributable_to_noncontrolling_interests",
+                    "net_income_attributable_to_noncontrolling_interests",
+                    "less_net_income_attributable_to_noncontrolling_interests",
+                    "net_loss_attributable_to_non_controlling_interest"
+                ) ~ "net_income_attributable_to_noncontrolling_interest",
                 field %in% c("dividends_per_common_share_in_dollars_per_share") ~ "basic_dividends_per_share",
                 field %in% c("dividend_on_preferred_stock") ~ "preferred_dividends",
                 field %in% c(
@@ -481,7 +514,9 @@ consolidate_is_field_names <- function(df) {
                     "net_loss_per_share_basic_in_dollars_per_share",
                     "basic_net_loss_per_share",
                     "net_income_attributable_to_common_stockholders_per_share_basic_in_dollars_per_share",
-                    "earnings_loss_per_share_basic"
+                    "earnings_loss_per_share_basic",
+                    "net_income_in_dollars_per_share",
+                    "earnings_per_share_basic_in_dollars_per_share"
                 ) ~ "basic_eps",
                 str_detect(
                     field,
@@ -523,7 +558,8 @@ consolidate_is_field_names <- function(df) {
                     "net_loss_income_per_share_diluted_in_usd_per_share",
                     "net_loss_per_share_diluted_in_dollars_per_share",
                     "net_income_loss_per_common_share_diluted",
-                    "earnings_loss_per_share_diluted"
+                    "earnings_loss_per_share_diluted",
+                    "earnings_per_share_diluted_in_dollars_per_share"
                 ) ~ "diluted_eps",
                 str_detect(
                     field,
@@ -807,7 +843,6 @@ fields_is_to_ignore_2 <- function() {
         "short_term_borrowings",
         "other_comprehensive_income_loss",
         "bank_owned_life_insurance_income",
-        "income_loss_from_discontinued_operations",
         "other_noninterest_income",
         "cash_dividends_declared_per_common_share",
         "fdic_insurance",
@@ -822,10 +857,24 @@ fields_is_to_ignore_2 <- function() {
         "real_estate_taxes",
         "nontaxable",
         "other_borrowings",
-        "other_income_expenses_net"
-    )
+        "other_income_expenses_net",
+        "equipment",
+        "franchise_tax_expense",
+        "income_from_bank_owned_life_insurance",
+        "interest_expense_related_party",
+        "change_in_fair_value_of_warrant_liabilities",
+        "bank_owned_life_insurance",
+        "borrowed_funds",
+        "cash_dividends_declared_per_common_share_in_dollars_per_share",
+        "commissions",
+        "communications",
+        "dividends_declared_per_share_in_dollars_per_share",
+        "other_expenses_net",
+        "other_noninterest_expense",
+        "other_operating_expense",
+        "property_operating_expenses"
+        )
 }
-
 
 
 
@@ -843,47 +892,32 @@ if(!exists("is_cleaned")) {
 
 map_lgl(is_cleaned, ~dim(.x) %>% length() %>% {. != 2}) %>% which()
 
+get_is_cleaned_list <- function(id) {
+    map(
+        is_cleaned[id],
+        ~ consolidate_is_field_names(.x) %>%
+            filter(!field %in% fields_is_to_ignore_1()) %>%
+            filter(!field %in% fields_is_to_ignore_2()) %>%
+            # filter(!str_detect(field, field_patterns_is_to_ignore())) %>%
+            remove_leading_duplicates(field = "net_income") %>%
+            split_basic_and_diluted_eps() %>%
+            split_basic_and_diluted_shares() %>% 
+            consolidate_dep_amor() %>% 
+            consolidate_dep() %>% 
+            consolidate_amor() %>% 
+            consolidate_selling_expense() %>% 
+            consolidate_general_administrative())
+}
 
-map(
-    is_cleaned[171:180],
-    ~ consolidate_is_field_names(.x) %>%
-        filter(!field %in% fields_is_to_ignore_1()) %>%
-        filter(!field %in% fields_is_to_ignore_2()) %>%
-        # filter(!str_detect(field, field_patterns_is_to_ignore())) %>%
-        remove_leading_duplicates(field = "net_income") %>%
-        split_basic_and_diluted_eps() %>%
-        split_basic_and_diluted_shares() %>% 
-        consolidate_dep_amor() %>% 
-        consolidate_dep() %>% 
-        consolidate_amor() %>% 
-        consolidate_selling_expense() %>% 
-        consolidate_general_administrative()) %>% 
-    # compact() %>% # Remove null list items
-    map(., ~pull(.x, field))
+get_is_cleaned_list(171:180) %>% map(., ~pull(.x, field))
 
 
 # Common fields
-is_cleaned_list <- readRDS("is_cleaned_list.rds")
-if(!exists("is_cleaned_list")) {
-    seq_is <- 1:length(is_cleaned)
-    
-    is_cleaned_list <-
-        map(
-            is_cleaned[seq_is],
-            ~ consolidate_is_field_names(.x) %>%
-                filter(!field %in% fields_is_to_ignore_1()) %>%
-                filter(!field %in% fields_is_to_ignore_2()) %>%
-                # filter(!str_detect(field, field_patterns_is_to_ignore())) %>%
-                remove_leading_duplicates(field = "net_income") %>% 
-                split_basic_and_diluted_eps() %>% 
-                split_basic_and_diluted_shares() %>% 
-                consolidate_dep_amor() %>% 
-                consolidate_dep() %>% 
-                consolidate_amor() %>% 
-                consolidate_selling_expense() %>% 
-                consolidate_general_administrative())
+# is_cleaned_list <- readRDS("is_cleaned_list.rds")
+# if(!exists("is_cleaned_list")) {
+    is_cleaned_list <- get_is_cleaned_list(seq_along(is_cleaned))
     saveRDS(is_cleaned_list, "is_cleaned_list.rds")
-}
+# }
 
 is_fields_chr <- 
   is_cleaned_list %>% 
@@ -894,9 +928,9 @@ is_fields_chr %>% slice(1:90)
 
 
 # Find tickers with duplicate fields
-has_dups_is <- is_cleaned_list %>% map_lgl(., ~duplicated(.x$field) %>% any())
-tickers_with_dup_fields <- has_dups_is[has_dups_is == TRUE] %>% names()
-tickers_with_dup_fields
+# has_dups_is <- is_cleaned_list %>% map_lgl(., ~duplicated(.x$field) %>% any())
+# is_tickers_with_dup_fields <- has_dups_is[has_dups_is == TRUE] %>% names()
+# is_tickers_with_dup_fields
 
 # ticker <- "SHO"
 # ticker_id <- 274
@@ -919,98 +953,84 @@ tickers_with_dup_fields
 
 ################################
 ################################
-group_1 <- is_cleaned_list %>% 
-  map_lgl(~pull(.x, field) %>% 
-        str_detect("basic_and_diluted") %>% any()) %>% 
-  which()
-group_2 <- is_cleaned_list %>% 
-  map_lgl(~pull(.x, field) %>% 
-            str_detect("^basic_and_diluted_shares$|^basic_and_diluted_eps$") %>% any()) %>% 
-  which()
-
-setdiff(group_1, intersect(group_1, group_2))
-is_cleaned[1937] %>%
-  map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
-  unlist() %>% setNames(NULL)
+# group_1 <- is_cleaned_list %>% 
+#   map_lgl(~pull(.x, field) %>% 
+#         str_detect("basic_and_diluted") %>% any()) %>% 
+#   which()
+# group_2 <- is_cleaned_list %>% 
+#   map_lgl(~pull(.x, field) %>% 
+#             str_detect("^basic_and_diluted_shares$|^basic_and_diluted_eps$") %>% any()) %>% 
+#   which()
+# 
+# setdiff(group_1, intersect(group_1, group_2))
+# is_cleaned[1937] %>%
+#   map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
+#   unlist() %>% setNames(NULL)
 ################################
 ################################
 
-group_1 <- is_cleaned_list %>% 
-    map_lgl(~pull(.x, field) %>% 
-                str_detect("selling_expense|general_administrative_expense") %>% any()) %>% 
-    which()
-group_2 <- is_cleaned_list %>% 
-    map_lgl(~pull(.x, field) %>% 
-                str_detect("^selling_general_administrative$") %>% any()) %>% 
-    which()
-
-setdiff(group_1, intersect(group_1, group_2))
-is_cleaned[2073] %>%
-    map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
-    unlist() %>% setNames(NULL)
+# group_1 <- is_cleaned_list %>% 
+#     map_lgl(~pull(.x, field) %>% 
+#                 str_detect("selling_expense|general_administrative_expense") %>% any()) %>% 
+#     which()
+# group_2 <- is_cleaned_list %>% 
+#     map_lgl(~pull(.x, field) %>% 
+#                 str_detect("^selling_general_administrative$") %>% any()) %>% 
+#     which()
+# 
+# setdiff(group_1, intersect(group_1, group_2))
+# is_cleaned[2073] %>%
+#     map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
+#     unlist() %>% setNames(NULL)
 ################################
 ################################
 
 
 is_fields_to_keep <-
-    c(
-        "net_income",
-        "operating_income",
-        "total_revenue",
-        "selling_general_administrative",
-        "total_operating_expenses",
-        "income_taxes",
-        "interest_expense",
-        "income_before_taxes",
-        "basic_shares",
-        "cost_of_revenue",
-        "diluted_eps",
-        "basic_eps",
-        "gross_profit",
-        "depreciation_amortization",
-        "research_and_development",
-        "diluted_shares",
-        "income_tax_expense",
-        "salaries_and_wages"
-    )
+    is_fields_chr %>% mutate(pct = round(n / max(n), 2)) %>% 
+    filter(pct > 0.03) %>% 
+    pull(field) %>% 
+    as.character() %>% 
+    .[!. %in% c(
+        "basic",
+        "diluted",
+        "selling_expense",
+        "general_administrative_expense",
+        "basic_and_diluted",
+        "amortization"   
+    )]
+    
 
 is_cleaned_list_final <-
-    map(
-        is_cleaned,
-        ~ consolidate_is_field_names(.x) %>%
-            filter(!field %in% fields_is_to_ignore_1()) %>%
-            filter(!field %in% fields_is_to_ignore_2()) %>%
-            # filter(!str_detect(field, field_patterns_is_to_ignore())) %>%
-            remove_leading_duplicates(field = "net_income") %>% 
-            split_basic_and_diluted_eps() %>% 
-            split_basic_and_diluted_shares() %>% 
-            consolidate_dep_amor() %>% 
-            consolidate_dep() %>% 
-            consolidate_amor() %>% 
-            consolidate_selling_expense() %>% 
-            consolidate_general_administrative() %>% 
-            filter(!ticker %in% tickers_with_dup_fields) %>% 
-            filter(field %in% is_fields_to_keep))
-saveRDS(is_cleaned_list_final, "is_cleaned_list_final.rds")
+    get_is_cleaned_list(seq_along(is_cleaned)) %>% 
+    map(~filter(.x, field %in% is_fields_to_keep))
 
+has_dups_is <- is_cleaned_list_final %>% map_lgl(., ~duplicated(.x$field) %>% any())
+is_tickers_with_dup_fields <- has_dups_is[has_dups_is == TRUE] %>% names(); is_tickers_with_dup_fields
 
-# is_cleaned_new <- reduce(is_cleaned_list_final, ~suppressMessages(full_join(.x, .y)))
-# fwrite(is_cleaned_new, "data/cleaned data - new/is_cleaned_new.csv")
+is_final <-
+    is_cleaned_list_final %>% 
+    map(~filter(.x, !ticker %in% is_tickers_with_dup_fields))
+# saveRDS(is_final, "is_final.rds")
+
+is_cleaned_new <- reduce(is_final, ~suppressMessages(full_join(.x, .y)))
+fwrite(is_cleaned_new, "data/cleaned data - new/is_cleaned_new.csv")
 
 is_new <- 
     is_cleaned_new %>% 
     pivot_longer(-c(ticker, field, download_date),
                  names_to = "date") %>% 
     pivot_wider(names_from = "field", values_from = "value") %>% 
-    mutate(date = as.Date(date, "x%Y_%m_%d"))
+    mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
+    mutate(statement = "1 - is_new")
     
 
 
-is_cleaned_old <- read_tibble(is_files_cleaned)
+is_cleaned_old <- read_tibble(is_files_cleaned %>% min())
 colnames(is_cleaned_old)
-bs_cleaned_old <- read_tibble(bs_files_cleaned)
+bs_cleaned_old <- read_tibble(bs_files_cleaned %>% min())
 colnames(bs_cleaned_old)
-cf_cleaned_old <- read_tibble(cf_files_cleaned)
+cf_cleaned_old <- read_tibble(cf_files_cleaned %>% min())
 colnames(cf_cleaned_old)
 
 
@@ -1018,52 +1038,72 @@ is_old <-
     is_cleaned_old %>%
     rename(
         basic_eps = "earnings_per_share_basic",
-        diluted_eps = "earnings_per_share_diluted"
+        diluted_eps = "earnings_per_share_diluted",
+        interest_income_net = "net_interest_income",
+        interest_expense = "net_interest_paid"
     ) %>% 
-    select(any_of(c("ticker", "date", "download_date", is_fields_to_keep))) %>% 
+    mutate(statement = "2 - is_old") %>% 
+    select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep))) %>%
     left_join(
-        bs_cleaned_old %>% 
+        bs_cleaned_old %>%
         rename(
-            diluted_eps = "earnings_per_share_diluted"
+            diluted_eps = "earnings_per_share_diluted",
+            interest_income_net = "net_interest_income",
+            interest_expense = "net_interest_paid"
         ) %>% 
-            select(any_of(c("ticker", "date", "download_date", is_fields_to_keep)))
+            mutate(statement = "4 - bs_old") %>% 
+            select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep)))
     ) %>% 
     left_join(
         cf_cleaned_old %>%
         rename(
             basic_eps = "earnings_per_share_basic",
-            diluted_eps = "earnings_per_share_diluted"
+            diluted_eps = "earnings_per_share_diluted",
+            interest_income_net = "net_interest_income",
+            interest_expense = "net_interest_paid"
         ) %>% 
-            select(any_of(c("ticker", "date", "download_date", is_fields_to_keep)))
+            mutate(statement = "3 - cf_old") %>% 
+            select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep)))
     )
-       
+     
+
+
+  
 colnames(is_new)
 colnames(is_old)
+
 is_combined <- is_new %>% full_join(is_old)
 is_final <-
     is_combined %>% 
-    arrange(ticker, desc(date), desc(download_date)) %>% 
+    arrange(ticker, desc(date), desc(download_date), statement) %>%
     group_by(ticker, date) %>% 
     fill(where(is.numeric), .direction = "up") %>% 
-    slice(1)
+    slice(1) %>% 
+    select(-statement, -download_date)
+
+cnts <- 
+    is_final %>% 
+    group_by(ticker, date) %>% 
+    count()
+if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
+
 
 fwrite(is_final, paste0("data/cleaned data/income_statements_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
+is_final <- read_tibble(list.files("data/cleaned data", 
+                                   pattern = "income_statements_cleaned",
+                                   full.names = TRUE) %>% max())
 
 
+# write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
+# is_final <- jsonlite::fromJSON("data/cleaned data/is_final.json")
 
 
-
-              
-    
 # cf_cleaned_old %>% 
 #     select(ticker, date, net_interest_income, net_interest_paid) %>% 
 #     filter(!is.na(net_interest_income) & !is.na(net_interest_paid)) #%>% 
     # filter(net_interest_income < 0)
     # mutate(equal = net_interest_income == net_interest_paid) %>% 
     # filter(equal == TRUE)
-
-
-
 
 
 
@@ -1310,7 +1350,9 @@ consolidate_bs_field_names <- function(df) {
                 field %in% c(
                     "total_stockholders_deficit_equity",
                     "total_stockholders_deficit",
-                    "total_stockholders_equity_deficit"
+                    "total_stockholders_equity_deficit",
+                    "total_stockholders_equity",
+                    "total_equity"
                 ) ~ "total_shareholders_equity",
                 str_detect(
                     field,
@@ -1508,18 +1550,27 @@ if(!exists("bs_cleaned")) {
   saveRDS(bs_cleaned, "bs_cleaned.rds")
 }
 
+get_bs_cleaned_list <- function(indx) {
+    map(
+        bs_cleaned[indx],
+        ~ consolidate_bs_field_names(.x) %>%
+            filter(!field %in% fields_bs_to_ignore_1()) %>%
+            filter(!field %in% fields_bs_to_ignore_2()) %>%
+            filter(!field %in% fields_bs_to_ignore_3()) %>%
+            filter(!str_detect(field, field_patterns_bs_to_ignore())) %>%
+            pull(field)
+    )
+}
 
-map(bs_cleaned[111:120],
-    ~consolidate_bs_field_names(.x) %>%
-      filter(!field %in% fields_bs_to_ignore_1()) %>%  
-      filter(!field %in% fields_bs_to_ignore_2()) %>% 
-      filter(!str_detect(field, field_patterns_bs_to_ignore())) %>%
-      pull(field))
+get_bs_cleaned_list(111:120)
 
 
 # Common fields
 bs_cleaned_list <- readRDS("bs_cleaned_list.rds")
 if(!exists("bs_cleaned_list")) {
+    
+    bs_cleaned_list <- get_bs_cleaned_list(seq_along(bs_cleaned))
+    
     seq_bs <- 1:length(bs_cleaned)
     
     bs_cleaned_list <-
@@ -1528,6 +1579,7 @@ if(!exists("bs_cleaned_list")) {
             ~ consolidate_bs_field_names(.x) %>%
                 filter(!field %in% fields_bs_to_ignore_1()) %>%
                 filter(!field %in% fields_bs_to_ignore_2()) %>%
+                filter(!field %in% fields_bs_to_ignore_3()) %>%
                 filter(!str_detect(
                     field, field_patterns_bs_to_ignore()
                 ))
@@ -1545,8 +1597,115 @@ bs_fields_chr %>% slice(1:60)
 
 # Find tickers with duplicate fields
 has_dups_bs <- bs_cleaned %>% map_lgl(., ~duplicated(.x$field) %>% any())
-has_dups_bs[has_dups_bs == TRUE] %>% names()
+bs_tickers_with_dup_fields <- has_dups_bs[has_dups_bs == TRUE] %>% names()
+bs_tickers_with_dup_fields
 
+
+bs_fields_to_keep <-
+    c(
+        "total_shareholders_equity",
+        "cash",
+        "total_assets",
+        "total_liabilities",
+        "total_current_assets",
+        "total_current_liabilities",
+        "accounts_payable",
+        "property_plant_equipment_net",
+        "commitments_and_contingencies",
+        "accounts_receivable",
+        "goodwill",
+        "shares_basic",
+        "inventory",
+        "shares_preferred",
+        "long_term_debt",
+        "short_term_lease_liabilities",
+        "intangible_assets_net",
+        "long_term_lease_liabilities",
+        "minority_interest",
+        "restricted_cash",
+        "short_term_debt",
+        "short_term_deferred_revenue",
+        "short_term_investments",
+        "accumulated_depreciation"
+    )
+
+bs_cleaned_list_final <-
+    map(
+        bs_cleaned,
+        ~ consolidate_bs_field_names(.x) %>%
+            filter(!field %in% fields_bs_to_ignore_1()) %>%
+            filter(!field %in% fields_bs_to_ignore_2()) %>%
+            filter(!field %in% fields_bs_to_ignore_3()) %>%
+            filter(!str_detect(
+                field, field_patterns_bs_to_ignore()
+            )) %>% 
+            filter(!ticker %in% bs_tickers_with_dup_fields) %>% 
+            filter(field %in% bs_fields_to_keep))
+saveRDS(bs_cleaned_list_final, "bs_cleaned_list_final.rds")
+
+
+bs_cleaned_new <- reduce(bs_cleaned_list_final, ~suppressMessages(full_join(.x, .y)))
+fwrite(bs_cleaned_new, "data/cleaned data - new/bs_cleaned_new.csv")
+
+bs_new <- 
+    bs_cleaned_new %>% 
+    pivot_longer(-c(ticker, field, download_date),
+                 names_to = "date") %>% 
+    pivot_wider(names_from = "field", values_from = "value") %>% 
+    mutate(date = as.Date(date, "x%Y_%m_%d"))
+
+
+
+is_cleaned_old <- read_tibble(is_files_cleaned)
+colnames(is_cleaned_old)
+bs_cleaned_old <- read_tibble(bs_files_cleaned)
+colnames(bs_cleaned_old)
+cf_cleaned_old <- read_tibble(cf_files_cleaned)
+colnames(cf_cleaned_old)
+
+
+bs_old <-
+    bs_cleaned_old %>%
+    rename(
+        basic_eps = "earnings_per_share_basic",
+        diluted_eps = "earnings_per_share_diluted"
+    ) %>% 
+    select(any_of(c("ticker", "date", "download_date", bs_fields_to_keep))) %>% 
+    left_join(
+        is_cleaned_old %>% 
+            rename(
+                diluted_eps = "earnings_per_share_diluted"
+            ) %>% 
+            select(any_of(c("ticker", "date", "download_date", bs_fields_to_keep)))
+    ) %>% 
+    left_join(
+        cf_cleaned_old %>%
+            rename(
+                basic_eps = "earnings_per_share_basic",
+                diluted_eps = "earnings_per_share_diluted"
+            ) %>% 
+            select(any_of(c("ticker", "date", "download_date", bs_fields_to_keep)))
+    )
+
+colnames(bs_new)
+colnames(bs_old)
+bs_combined <- bs_new %>% full_join(bs_old)
+bs_final <-
+    bs_combined %>% 
+    arrange(ticker, desc(date), desc(download_date)) %>% 
+    group_by(ticker, date) %>% 
+    fill(where(is.numeric), .direction = "up") %>% 
+    slice(1)
+
+fwrite(bs_final, paste0("data/cleaned data/balance_sheets_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
+
+
+
+
+
+
+
+#### TO DO Later ######
 
 # !!! Later compute cash_and_short_term_investments if not available and both items exist separately
 
@@ -1561,6 +1720,10 @@ Eventually, remove line items one at a time when it is determined that they are 
 
 Check if long_term_lease_liabilites is included in long_term_debt or total_debt
 If not, then can choose to addd it later to create adjusted_long_term_debt
+
+
+
+
 
 
 
