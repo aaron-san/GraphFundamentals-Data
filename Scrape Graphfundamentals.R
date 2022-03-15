@@ -7,6 +7,8 @@ library(data.table)
 library(RCurl)
 library(httr)
 
+conflicted::conflict_prefer_all("dplyr", quiet = TRUE)
+
 source("helper functions.R")
 source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
 

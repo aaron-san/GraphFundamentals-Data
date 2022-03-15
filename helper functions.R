@@ -1,7 +1,7 @@
 
 
 
-
+conflicted::conflict_prefer_all("dplyr", quiet = TRUE)
 
 # !!!! make function that appends a number to all duplicates so as to
 # indicate that is not unique

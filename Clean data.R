@@ -5,8 +5,14 @@
 # - Reformat dates, numbers, etc.
 # - Combine multiple tickers into big files
 
+
+# 0. ADMIN ----------------------------------------------------------------
+
 library(tidyverse)
 library(data.table)
+
+conflicted::conflict_prefer_all("dplyr", quiet = TRUE)
+
 # source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
 source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions.R")
 source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions from Fundamentals-Data.R")
@@ -25,8 +31,8 @@ raw_files <-
     list.files(paste0(dir_proj, "/data/raw data"), 
                pattern = "income_statement|balance_sheet|cash_flow",
                full.names = TRUE)
-cleaned_files <- 
-    list.files(paste0(dir_proj, "/data/cleaned data"), 
+cleaned_files_old <- 
+    list.files(paste0(dir_proj, "/data/cleaned data - old (keep)"), 
                pattern = "income_statement|balance_sheet|cash_flow",
                full.names = TRUE)
 # combined_files <- sort(unique(c(raw_files, cleaned_files)), decreasing = TRUE)
@@ -41,9 +47,10 @@ bs_files_raw <- raw_files %>% str_subset("balance_sheet")
 cf_files_raw <- raw_files %>% str_subset("cash_flow")
 
 # Files with already cleaned data
-is_files_cleaned <- cleaned_files %>% str_subset("income_statement")
-bs_files_cleaned <- cleaned_files %>% str_subset("balance_sheet")
-cf_files_cleaned <- cleaned_files %>% str_subset("cash_flow")
+# This data was scraped and cleaned before the website API change, so need to harvest
+is_files_cleaned_old <- cleaned_files_old %>% str_subset("income_statement")
+bs_files_cleaned_old <- cleaned_files_old %>% str_subset("balance_sheet")
+cf_files_cleaned_old <- cleaned_files_old %>% str_subset("cash_flow")
 
 # Add download date column
 add_download_date <- function(file_path) {
@@ -66,7 +73,7 @@ add_download_date <- function(file_path) {
 
 
 
-# Analyze field raw names -------------------------------------------------
+# Analyze field raw names
 get_and_save_field_names <- function(files, what = "is") {
     #####
     # files <- is_files_raw[1:5]
@@ -148,7 +155,13 @@ clean_field_names <- function(df) {
 
 
 
-# INCOME STATEMENT --------------------------------------------------------
+
+
+
+
+
+
+# 1. INCOME STATEMENT --------------------------------------------------------
 
 
 consolidate_is_field_names <- function(df) {
@@ -822,7 +835,6 @@ fields_is_to_ignore_1 <- function() {
         "total_other_expense_net"
     )
 }
-
 fields_is_to_ignore_2 <- function() {
     c(
         "other_net",
@@ -877,7 +889,6 @@ fields_is_to_ignore_2 <- function() {
 }
 
 
-
 # field_patterns_is_to_ignore <- function() {
 #   c("")
 # }
@@ -888,6 +899,7 @@ if(!exists("is_cleaned")) {
   is_cleaned <- map(is_files_raw, ~add_download_date(.x) %>% clean_field_names())
   tickers_is <- is_cleaned %>% map_chr(., ~.x[1, "ticker"] %>% unlist())
   names(is_cleaned) <- tickers_is
+  saveRDS(is_cleaned, "is_cleaned.rds")
 }
 
 map_lgl(is_cleaned, ~dim(.x) %>% length() %>% {. != 2}) %>% which()
@@ -913,11 +925,11 @@ get_is_cleaned_list(171:180) %>% map(., ~pull(.x, field))
 
 
 # Common fields
-# is_cleaned_list <- readRDS("is_cleaned_list.rds")
-# if(!exists("is_cleaned_list")) {
+is_cleaned_list <- readRDS("is_cleaned_list.rds")
+if(!exists("is_cleaned_list")) {
     is_cleaned_list <- get_is_cleaned_list(seq_along(is_cleaned))
     saveRDS(is_cleaned_list, "is_cleaned_list.rds")
-# }
+}
 
 is_fields_chr <- 
   is_cleaned_list %>% 
@@ -951,8 +963,7 @@ is_fields_chr %>% slice(1:90)
 #   View()
 
 
-################################
-################################
+
 # group_1 <- is_cleaned_list %>% 
 #   map_lgl(~pull(.x, field) %>% 
 #         str_detect("basic_and_diluted") %>% any()) %>% 
@@ -966,8 +977,6 @@ is_fields_chr %>% slice(1:90)
 # is_cleaned[1937] %>%
 #   map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
 #   unlist() %>% setNames(NULL)
-################################
-################################
 
 # group_1 <- is_cleaned_list %>% 
 #     map_lgl(~pull(.x, field) %>% 
@@ -982,9 +991,6 @@ is_fields_chr %>% slice(1:90)
 # is_cleaned[2073] %>%
 #     map(~consolidate_is_field_names(.x) %>% pull(field)) %>% 
 #     unlist() %>% setNames(NULL)
-################################
-################################
-
 
 
 is_fields_to_keep <-
@@ -1015,7 +1021,7 @@ is_final <-
 # saveRDS(is_final, "is_final.rds")
 
 is_cleaned_new <- reduce(is_final, ~suppressMessages(full_join(.x, .y)))
-fwrite(is_cleaned_new, "data/cleaned data - new/is_cleaned_new.csv")
+# fwrite(is_cleaned_new, "data/cleaned data - new/is_cleaned_new.csv")
 
 is_new <- 
     is_cleaned_new %>% 
@@ -1027,11 +1033,11 @@ is_new <-
     
 
 
-is_cleaned_old <- read_tibble(is_files_cleaned %>% min())
+is_cleaned_old <- read_tibble(is_files_cleaned_old %>% min())
 colnames(is_cleaned_old)
-bs_cleaned_old <- read_tibble(bs_files_cleaned %>% min())
+bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% min())
 colnames(bs_cleaned_old)
-cf_cleaned_old <- read_tibble(cf_files_cleaned %>% min())
+cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% min())
 colnames(cf_cleaned_old)
 
 
@@ -1045,7 +1051,7 @@ is_old <-
     ) %>% 
     mutate(statement = "2 - is_old") %>% 
     select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep))) %>%
-    left_join(
+    full_join(
         bs_cleaned_old %>%
         rename(
             diluted_eps = "earnings_per_share_diluted",
@@ -1055,7 +1061,7 @@ is_old <-
             mutate(statement = "4 - bs_old") %>% 
             select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep)))
     ) %>% 
-    left_join(
+    full_join(
         cf_cleaned_old %>%
         rename(
             basic_eps = "earnings_per_share_basic",
@@ -1068,7 +1074,7 @@ is_old <-
     )
      
 
-
+# is_old %>% distinct(statement)
   
 colnames(is_new)
 colnames(is_old)
@@ -1095,8 +1101,9 @@ is_final <- read_tibble(list.files("data/cleaned data",
                                    full.names = TRUE) %>% max())
 
 
-# write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
-# is_final <- jsonlite::fromJSON("data/cleaned data/is_final.json")
+write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
+is_final <- jsonlite::fromJSON("data/cleaned data/is_final.json")
+# jsonlite::toJSON(is_final %>% slice(1:20))
 
 
 # cf_cleaned_old %>% 
@@ -1150,10 +1157,7 @@ ticker "ACLS" has basic and diluted followed by basic_shares and diluted_shares
 
 
 
-##########################
-#### BALANCE SHEET #######
-##########################
-
+# 2. BALANCE SHEET --------------------------------------------------------
 
 consolidate_bs_field_names <- function(df) {
     ######
@@ -1188,7 +1192,10 @@ consolidate_bs_field_names <- function(df) {
                     # !!!! Create a rule such that if there are no allowance_for_... fields, then consider this net of that.
                     # "customer_receivables",
                     # "trade_receivables",
-                    "receivables_net_of_allowance"
+                    "receivables_net_of_allowance",
+                    "trade_accounts_receivable_net",
+                    "trade_receivables_net",
+                    "trade_accounts_receivable_net"
                 ) ~ "accounts_receivable",
                 str_detect(
                     field,
@@ -1226,7 +1233,10 @@ consolidate_bs_field_names <- function(df) {
                     "property_and_equipment_net",
                     "properties_plants_and_equipment_net",
                     "property_and_equipment_net_of_accumulated_depreciation",
-                    "net_property_plant_and_equipment"
+                    "net_property_plant_and_equipment",
+                    "premises_and_equipment_net",
+                    "fixed_assets_net",
+                    "net_property_and_equipment"
                 ) ~ "property_plant_equipment_net",
                 str_detect(
                     field,
@@ -1264,7 +1274,9 @@ consolidate_bs_field_names <- function(df) {
                     "trade_accounts_payable",
                     "accounts_payable_and_accrued_expense",
                     "trade_payables",
-                    "accounts_payable_and_other_current_liabilities"
+                    "accounts_payable_and_other_current_liabilities",
+                    "accounts_payable_and_other_liabilities",
+                    "accounts_payable_trade"
                 ) ~ "accounts_payable",
                 # field %in% c(
                 # ) ~ "total_current_liabilities",
@@ -1284,7 +1296,10 @@ consolidate_bs_field_names <- function(df) {
                     "current_portion_of_long_term_debt_and_bank_borrowings",
                     "current_portion_of_long_term_borrowings",
                     "debt_current",
-                    "current_debt"
+                    "current_debt",
+                    "current_portion_of_notes_payable",
+                    "current_portion_of_notes_payable",
+                    "short_term_borrowings"
                 ) ~ "short_term_debt",
                 str_detect(field, # REGEX
                            "^long_term_debt_due_within_one_year.*$") ~ "short_term_debt",
@@ -1296,7 +1311,10 @@ consolidate_bs_field_names <- function(df) {
                     "long_term_debt_net_of_current_portion",
                     "long_term_debt_net_of_current_portion_and_deferred_finance_costs_and_other_liabilities",
                     "debt_net_of_current_maturities",
-                    "long_term_borrowings"
+                    "long_term_borrowings",
+                    "long_term_debt_less_current_portion",
+                    "long_term_debt_less_current_maturities",
+                    "long_term_debt_net_of_current_maturities"
                 ) ~ "long_term_debt",
                 field %in% c(
                     "current_maturities_of_operating_leases",
@@ -1314,7 +1332,9 @@ consolidate_bs_field_names <- function(df) {
                     "current_portion_of_operating_lease_liability",
                     "current_portion_of_operating_lease_liability",
                     "lease_liability_current_portion",
-                    "current_lease_liabilities"
+                    "current_lease_liabilities",
+                    "operating_lease_liability_current_portion",
+                    "current_operating_lease_liabilities"
                 ) ~ "short_term_lease_liabilities",
                 field %in% c(
                     "operating_lease_liability_net_of_current_portion",
@@ -1329,17 +1349,30 @@ consolidate_bs_field_names <- function(df) {
                     "lease_obligations_net_of_current_portion",
                     "operating_lease_liability_noncurrent",
                     "lease_liability_net_of_current_portion",
-                    "operating_lease_liabilities_less_current_portion"
+                    "operating_lease_liabilities_less_current_portion",
+                    "operating_lease_liabilities_non_current",
+                    "non_current_operating_lease_liabilities",
+                    "noncurrent_operating_lease_liabilities",
+                    "lease_liabilities_net_of_current_portion"
                 ) ~ "long_term_lease_liabilities",
+                field %in% c(
+                    "retained_earnings_deficit",
+                    "retained_deficit",
+                    "retained_earnings_accumulated_deficit"
+                ) ~ "retained_earnings",
                 
                 # !! there are also finance_lease_obligations !!! file 119
                 
                 field %in% c(
                     "current_portion_of_deferred_revenue",
                     "deferred_revenue_current_portion",
-                    "current_deferred_revenue"
+                    "current_deferred_revenue",
+                    "deferred_revenue_current"
                 ) ~ "short_term_deferred_revenue",
-                field %in% c("deferred_revenue_less_current_portion") ~ "long_term_deferred_revenue",
+                field %in% c(
+                    "deferred_revenue_less_current_portion",
+                    "deferred_revenue_non_current"
+                ) ~ "long_term_deferred_revenue",
                 field %in% c("convertible_notes_payable_noncurrent_portion") ~ "long_term_convertible_notes_payable",
                 field %in% c(
                     "noncontrolling_interests",
@@ -1347,13 +1380,18 @@ consolidate_bs_field_names <- function(df) {
                     "non_controlling_interests",
                     "non_controlling_interest"
                 ) ~ "minority_interest",
-                field %in% c("commitments") ~ "commitments_and_contingencies",
+                field %in% c(
+                    "commitments",
+                    "commitments_and_contingent_liabilities",
+                    "contingent_consideration"
+                ) ~ "commitments_and_contingencies",
                 field %in% c(
                     "total_stockholders_deficit_equity",
                     "total_stockholders_deficit",
                     "total_stockholders_equity_deficit",
                     "total_stockholders_equity",
-                    "total_equity"
+                    "total_equity",
+                    "total_shareholders_equity_deficit"
                 ) ~ "total_shareholders_equity",
                 str_detect(
                     field,
@@ -1374,6 +1412,48 @@ consolidate_bs_field_names <- function(df) {
                 required_prior_string = "total_current_liabilities",
                 current_string = "operating_lease_liabilities",
                 replacement = "long_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_current_liabilities",
+                required_posterior_string = "total_liabilities",
+                current_string = "lease_liabilities",
+                replacement = "long_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_assets",
+                required_posterior_string = "total_current_liabilities",
+                current_string = "lease_liabilities",
+                replacement = "short_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_current_liabilities",
+                required_posterior_string = "total_liabilities",
+                current_string = "lease_liability",
+                replacement = "long_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_assets",
+                required_posterior_string = "total_current_liabilities",
+                current_string = "finance_lease_liabilities",
+                replacement = "short_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_current_liabilities",
+                required_posterior_string = "total_liabilities",
+                current_string = "finance_lease_liabilities",
+                replacement = "long_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_assets",
+                required_posterior_string = "total_current_liabilities",
+                current_string = "lease_liability",
+                replacement = "short_term_lease_liabilities"
             ),
             field = rename_field_conditionally(
                 x = field,
@@ -1419,8 +1499,29 @@ consolidate_bs_field_names <- function(df) {
                 x = field,
                 required_prior_string = "total_current_liabilities",
                 required_posterior_string = "total_liabilities",
+                current_string = "operating_lease_liabilities",
+                replacement = "long_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "accounts_payable",
+                required_posterior_string = "total_current_liabilities",
+                current_string = "operating_lease_liability",
+                replacement = "short_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "total_current_liabilities",
+                required_posterior_string = "total_liabilities",
                 current_string = "operating_lease_liability",
                 replacement = "long_term_lease_liabilities"
+            ),
+            field = rename_field_conditionally(
+                x = field,
+                required_prior_string = "cash",
+                required_posterior_string = "total_current_assets",
+                current_string = "investments",
+                replacement = "short_term_investments"
             ),
             field = rename_total_assets_if_missing(x = field)
         )
@@ -1430,12 +1531,16 @@ consolidate_bs_field_names <- function(df) {
 fields_bs_to_ignore_1 <- function() {
   c("deferred_income_tax_liability_net",
     "other_accrued_liabilities",
-    "retained_earnings",
     "accumulated_other_comprehensive_loss_net_of_taxes",
     "other_noncurrent_liabilities",
     "other_long_term_liabilities",
     "noncurrent_insurance_claims",
     "accrued_taxesother_than_income",
+    "deferred_underwriting_fee_payable",
+    "net_loans",
+    "taxes_payable",
+    "accrued_investment_income",
+    "capital_surplus",
     "accrued_compensation",
     "other_noncurrent_assets",
     "right_of_use_assets",
@@ -1486,7 +1591,12 @@ fields_bs_to_ignore_1 <- function() {
     "total_non_current_liabilities",
     "discontinued_operations_current_liabilities",
     "other_long_term_assets_net",
-    "funds_payable_and_amounts_payable_to_customers"
+    "funds_payable_and_amounts_payable_to_customers",
+    "contract_assets",
+    "customer_deposits",
+    "derivative_liabilities",
+    "other_receivables",
+    "income_taxes_receivable"
   )
 }
 fields_bs_to_ignore_2 <- function() {
@@ -1533,10 +1643,68 @@ fields_bs_to_ignore_2 <- function() {
 fields_bs_to_ignore_3 <- function() {
     c("total_non_current_assets",
       "bank_owned_life_insurance",
-      "loans_held_for_sale"
+      "loans_held_for_sale",
+      "operating_lease_right_of_use_assets_net",
+      "cash_and_due_from_banks",
+      "prepaid_expenses",
+      "accumulated_other_comprehensive_income",
+      "total_deposits",
+      "deferred_tax_assets",
+      "common_stock",
+      "investments",
+      "common_stock_issued_in_shares",
+      "cash_and_due_from_banks",
+      "deferred_tax_liabilities",
+      "accumulated_other_comprehensive_loss_income",
+      "other_intangibles_net",
+      "deferred_offering_costs",
+      "deferred_tax_liabilities_net",
+      "derivative_warrant_liabilities",
+      "due_to_related_party",
+      "federal_funds_sold",
+      "derivative_liability",
+      "due_to_related_parties",
+      "interest_bearing_deposits",
+      "warrant_liabilities",
+      "income_tax_receivable",
+      "right_of_use_asset",
+      "income_tax_payable",
+      "prepaid_and_other_current_assets",
+      "deferred_tax_asset",
+      "other_accrued_expenses",
+      "loans",
+      "unearned_premiums",
+      "allowance_for_loan_losses",
+      "right_of_use_assets_net",
+      "line_of_credit",
+      "other_real_estate_owned",
+      "common_stock_par_value_in_usd_per_share",
+      "interest_payable",
+      "prepaid_expenses_and_other",
+      "accrued_and_other_liabilities",
+      "deferred_policy_acquisition_costs",
+      "deferred_underwriting_commissions",
+      "noninterest_bearing",
+      "allowance_for_credit_losses",
+      "preferred_stock",
+      "total_investments",
+      "asset_retirement_obligations",
+      "deferred_income_tax_liabilities",
+      "deferred_tax_liability_net",
+      "federal_home_loan_bank_advances",
+      "interest_receivable"
     )
 }
-      
+fields_bs_to_ignore_4 <- function() {
+    c("deferred_tax_liability",
+      "other_assets_net",
+      "dividends_payable",
+      "interest_bearing",
+      "warrant_liability"
+    )
+}      
+
+
 
 field_patterns_bs_to_ignore <- function() {
   c("^common_stock_.*(?=shares_authorized).*(?=shares_issued)|preferred_stock.*(?=shares_authorized).*(?=issued)|other_intangible_assets.*|^total_liabilities_class.*(?=shares).*|^treasury_stock.*|common_stock.*(?=shares_issued).*(?=outstanding).*|common_stock.*(?=par_value).*(outstanding).*|common_shares.*(?=par_value).*(?=authorized).*|^preferred_stock.*(?=authorized).*(?=issued).*|preferred_stock_par.*|common_stock_shares_par.*|income_taxes_payable.*|^common_shares_authorized.*|^preferred_shares_authorized.*|common_shares_shares_issued_in_shares|^common_shares_held_in_treasury.*|^common_shares.*(?=issued).*|^reinsurance.*|preferred_stock_authorized.*|preferred_stock_issued.*|^accrued_interest.*|^deferred_income_taxes.*|preferred_stock_.*_shares_outstanding|^treasury_shares.*|^par_value.*|^accumulated.*income_loss|^preferred_stock.*(?=outstanding)")
@@ -1551,40 +1719,25 @@ if(!exists("bs_cleaned")) {
   saveRDS(bs_cleaned, "bs_cleaned.rds")
 }
 
-get_bs_cleaned_list <- function(indx) {
+get_bs_cleaned_list <- function(id) {
     map(
-        bs_cleaned[indx],
+        bs_cleaned[id],
         ~ consolidate_bs_field_names(.x) %>%
             filter(!field %in% fields_bs_to_ignore_1()) %>%
             filter(!field %in% fields_bs_to_ignore_2()) %>%
             filter(!field %in% fields_bs_to_ignore_3()) %>%
-            filter(!str_detect(field, field_patterns_bs_to_ignore())) %>%
-            pull(field)
+            filter(!field %in% fields_bs_to_ignore_4()) %>%
+            filter(!str_detect(field, field_patterns_bs_to_ignore()))
     )
 }
 
-get_bs_cleaned_list(111:120)
+get_bs_cleaned_list(111:120) %>% map(~pull(.x, field))
 
 
 # Common fields
 bs_cleaned_list <- readRDS("bs_cleaned_list.rds")
 if(!exists("bs_cleaned_list")) {
-    
     bs_cleaned_list <- get_bs_cleaned_list(seq_along(bs_cleaned))
-    
-    seq_bs <- 1:length(bs_cleaned)
-    
-    bs_cleaned_list <-
-        map(
-            bs_cleaned[seq_bs],
-            ~ consolidate_bs_field_names(.x) %>%
-                filter(!field %in% fields_bs_to_ignore_1()) %>%
-                filter(!field %in% fields_bs_to_ignore_2()) %>%
-                filter(!field %in% fields_bs_to_ignore_3()) %>%
-                filter(!str_detect(
-                    field, field_patterns_bs_to_ignore()
-                ))
-        )
     saveRDS(bs_cleaned_list, "bs_cleaned_list.rds")
 }
 
@@ -1593,120 +1746,120 @@ bs_fields_chr <-
     map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
     table() %>% as.data.frame() %>% rename(field = ".", n = "Freq") %>% 
     arrange(desc(n))
-bs_fields_chr %>% slice(1:60)
+bs_fields_chr %>% slice(1:90)
 
 
-# Find tickers with duplicate fields
-has_dups_bs <- bs_cleaned %>% map_lgl(., ~duplicated(.x$field) %>% any())
-bs_tickers_with_dup_fields <- has_dups_bs[has_dups_bs == TRUE] %>% names()
-bs_tickers_with_dup_fields
 
 
 bs_fields_to_keep <-
-    c(
-        "total_shareholders_equity",
-        "cash",
-        "total_assets",
-        "total_liabilities",
-        "total_current_assets",
-        "total_current_liabilities",
-        "accounts_payable",
-        "property_plant_equipment_net",
-        "commitments_and_contingencies",
-        "accounts_receivable",
-        "goodwill",
-        "shares_basic",
-        "inventory",
-        "shares_preferred",
-        "long_term_debt",
-        "short_term_lease_liabilities",
-        "intangible_assets_net",
-        "long_term_lease_liabilities",
-        "minority_interest",
-        "restricted_cash",
-        "short_term_debt",
-        "short_term_deferred_revenue",
-        "short_term_investments",
-        "accumulated_depreciation"
-    )
+    bs_fields_chr %>% mutate(pct = round(n / max(n), 2)) %>% 
+    filter(pct > 0.03) %>% 
+    pull(field) %>% 
+    as.character() %>% 
+    .[!. %in% c(
+        
+        "accrued_expenses",
+        "accrued_liabilities",
+        "intangible_assets",
+        "notes_payable"
+    )]
 
 bs_cleaned_list_final <-
-    map(
-        bs_cleaned,
-        ~ consolidate_bs_field_names(.x) %>%
-            filter(!field %in% fields_bs_to_ignore_1()) %>%
-            filter(!field %in% fields_bs_to_ignore_2()) %>%
-            filter(!field %in% fields_bs_to_ignore_3()) %>%
-            filter(!str_detect(
-                field, field_patterns_bs_to_ignore()
-            )) %>% 
-            filter(!ticker %in% bs_tickers_with_dup_fields) %>% 
-            filter(field %in% bs_fields_to_keep))
-saveRDS(bs_cleaned_list_final, "bs_cleaned_list_final.rds")
+    bs_cleaned_list %>% 
+    # get_bs_cleaned_list(seq_along(bs_cleaned)) %>% 
+    map(~filter(.x, field %in% bs_fields_to_keep))
 
+has_dups_bs <- bs_cleaned_list_final %>% map_lgl(., ~duplicated(.x$field) %>% any())
+bs_tickers_with_dup_fields <- has_dups_bs[has_dups_bs == TRUE] %>% names(); bs_tickers_with_dup_fields
 
-bs_cleaned_new <- reduce(bs_cleaned_list_final, ~suppressMessages(full_join(.x, .y)))
-fwrite(bs_cleaned_new, "data/cleaned data - new/bs_cleaned_new.csv")
+bs_final <-
+    bs_cleaned_list_final %>% 
+    map(~filter(.x, !ticker %in% bs_tickers_with_dup_fields))
+# saveRDS(bs_final, "bs_final.rds")
+
+bs_cleaned_new <- reduce(bs_final, ~suppressMessages(full_join(.x, .y)))
+# fwrite(bs_cleaned_new, "data/cleaned data - new/bs_cleaned_new.csv")
 
 bs_new <- 
     bs_cleaned_new %>% 
     pivot_longer(-c(ticker, field, download_date),
                  names_to = "date") %>% 
     pivot_wider(names_from = "field", values_from = "value") %>% 
-    mutate(date = as.Date(date, "x%Y_%m_%d"))
+    mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
+    mutate(statement = "1 - bs_new")
 
 
-
-is_cleaned_old <- read_tibble(is_files_cleaned)
+is_cleaned_old <- read_tibble(is_files_cleaned_old %>% min())
 colnames(is_cleaned_old)
-bs_cleaned_old <- read_tibble(bs_files_cleaned)
+bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% min())
 colnames(bs_cleaned_old)
-cf_cleaned_old <- read_tibble(cf_files_cleaned)
+cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% min())
 colnames(cf_cleaned_old)
 
 
 bs_old <-
     bs_cleaned_old %>%
     rename(
-        basic_eps = "earnings_per_share_basic",
-        diluted_eps = "earnings_per_share_diluted"
+        cash = "cash_and_cash_equivalents",
+        long_term_debt = "non_current_portion_of_long_term_debt"
     ) %>% 
-    select(any_of(c("ticker", "date", "download_date", bs_fields_to_keep))) %>% 
-    left_join(
-        is_cleaned_old %>% 
+    mutate(statement = "2 - bs_old") %>% 
+    select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep))) %>% 
+    full_join(
+        is_cleaned_old %>%
             rename(
-                diluted_eps = "earnings_per_share_diluted"
+                cash = "cash_and_cash_equivalents",
+                long_term_debt = "non_current_portion_of_long_term_debt"
             ) %>% 
-            select(any_of(c("ticker", "date", "download_date", bs_fields_to_keep)))
+            select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep))) %>% 
+            mutate(statement = "3 - is_old")
     ) %>% 
-    left_join(
-        cf_cleaned_old %>%
+    full_join(
+        cf_cleaned_old %>% 
             rename(
-                basic_eps = "earnings_per_share_basic",
-                diluted_eps = "earnings_per_share_diluted"
+                cash = "cash_and_cash_equivalents",
+                long_term_debt = "non_current_portion_of_long_term_debt"
             ) %>% 
-            select(any_of(c("ticker", "date", "download_date", bs_fields_to_keep)))
+            select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep))) %>% 
+            mutate(statement = "4 - cf_old")
     )
+
+# bs_old %>% distinct(statement)
 
 colnames(bs_new)
 colnames(bs_old)
+
 bs_combined <- bs_new %>% full_join(bs_old)
 bs_final <-
     bs_combined %>% 
-    arrange(ticker, desc(date), desc(download_date)) %>% 
+    arrange(ticker, desc(date), desc(download_date), statement) %>%
     group_by(ticker, date) %>% 
     fill(where(is.numeric), .direction = "up") %>% 
-    slice(1)
+    slice(1) %>%
+    select(-statement, -download_date)
 
-fwrite(bs_final, paste0("data/cleaned data/balance_sheets_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
+cnts <- 
+    bs_final %>% 
+    group_by(ticker, date) %>% 
+    count()
+if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
 
 
+fwrite(bs_final, paste0("data/cleaned data/bs_final (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
+bs_final <- read_tibble(list.files("data/cleaned data", 
+                                   pattern = "bs_final.*\\.csv",
+                                   full.names = TRUE) %>% max())
 
 
+write(jsonlite::toJSON(bs_final), "data/cleaned data/bs_final.json")
+bs_final_json <- jsonlite::fromJSON("data/cleaned data/bs_final.json")
+# jsonlite::toJSON(is_final %>% slice(1:20))
+
+rm(bs_final)
+rm(bs_final_json)
 
 
-
-#### TO DO Later ######
+# TO DO Later
 
 # !!! Later compute cash_and_short_term_investments if not available and both items exist separately
 
@@ -1715,12 +1868,9 @@ fwrite(bs_final, paste0("data/cleaned data/balance_sheets_cleaned (", str_replac
 if total_assets doesn't exist but total liabilieis and equity does, then rename as total_assets'
 
 
-Eventually, remove line items one at a time when it is determined that they are unneeded and continue consolidating names as necessary
-
-
 
 Check if long_term_lease_liabilites is included in long_term_debt or total_debt
-If not, then can choose to addd it later to create adjusted_long_term_debt
+If not, then can choose to add it later to create adjusted_long_term_debt
 
 
 
@@ -1729,250 +1879,393 @@ If not, then can choose to addd it later to create adjusted_long_term_debt
 
 
 
-# Cash Flows --------------------------------------------------------------
+
+
+
+# 3. CASH FLOWS -----------------------------------------------------------
+
 
 consolidate_cf_field_names <- function(df) {
-  ######
-  # df <- cf_files_raw[1] %>% add_download_date() %>% clean_field_names()
-  ######
-  df %>%
-    mutate(
-      field = case_when(
-      
-          field %in% c(
-            "net_loss",
-            "net_earnings_loss",
-            "net_income_loss",
-            "net_earnings",
-            "net_loss_income"
-          ) ~ "net_income",
-        field %in% c(
-          "depreciation_and_amortization",
-          "provision_for_depreciation_depletion_and_amortization",
-          "depreciation_depletion_and_amortization",
-          "depreciation_amortization_and_accretion",
-          "depreciation_and_amortization_expense",
-          "depreciation_and_amortization_of_property_and_equipment"
-        ) ~ "depreciation_amortization",
-        field %in% c(
-          "depreciation_expense"
-        ) ~ "depreciation",
-        field %in% c(
-          "amortization_of_intangible_assets",
-          "amortization_of_deferred_financing_costs",
-          "amortization_of_debt_issuance_costs",
-          "amortization_of_right_of_use_assets",
-          "amortization_of_intangibles",
-          "amortization_of_debt_discount_and_issuance_costs",
-          "amortization_of_operating_lease_right_of_use_assets"
-        ) ~ "amortization",
-        field %in% c(
-          "share_based_compensation_expense",
-          "share_based_compensation",
-          "equity_based_compensation",
-          "stock_compensation_expense"
-        ) ~ "stock_based_compensation",
-        field %in% c(
-          "net_cash_used_in_operating_activities",
-          "net_cash_from_used_in_continuing_operations",
-          "cash_provided_by_operating_activities",
-          "net_cash_provided_by_used_in_operating_activities",
-          "cash_provided_from_used_for_operations",
-          "cash_flows_from_operating_activities",
-          "net_cash_provided_by_operating_activities",
-          "net_cash_provided_by_used_for_operating_activities",
-          "net_cash_from_operating_activities",
-          "net_cash_flows_used_in_operations",
-          "net_cash_used_by_operating_activities",
-          "net_cash_used_in_provided_by_operating_activities",
-          "net_cash_flows_from_operating_activities"
-        ) ~ "operating_cash_flows" ,
-      #   field %in% c(
-      #   ) ~ "",
-        field %in% c(
-          "investment_in_property_and_equipment",
-          "purchase_of_property_plant_and_equipment",
-          "additions_to_property_and_equipment",
-          "additions_to_investments",
-          "capital_expenditures",
-          "acquisitions_of_property_and_equipment",
-          "purchases_of_property_plant_and_equipment",
-          "additions_to_property_plant_and_equipment",
-          "purchases_of_premises_and_equipment",
-          "acquisition_of_property_and_equipment",
-          "purchases_of_fixed_assets",
-          "purchase_of_property_and_equipment",
-          "payments_for_capital_expenditures",
-          "expenditures_for_property_plant_and_equipment_and_capitalized_software",
-          "cash_paid_for_capital_expenditures",
-          "acquisition_of_property_plant_and_equipment"
-        ) ~ "purchases_of_property_and_equipment",
-        field %in% c(
-          "proceeds_from_dispositions_of_property_plant_and_equipment",
-          "proceeds_from_the_sale_of_assets",
-          "proceeds_from_sale_of_premises_and_equipment",
-          "proceeds_from_disposition_of_property_and_other_assets",
-          "proceeds_from_the_sale_of_property_and_equipment",
-          "proceeds_from_disposal_of_property_and_equipment",
-          "proceeds_from_sales_of_premises_and_equipment",
-          "proceeds_from_sale_of_property_plant_and_equipment"
-        ) ~ "sales_of_property_and_equipment",
-      
-      field %in% c(
-          "net_cash_used_in_investing_activities",
-          "cash_used_in_investing_activities",
-          "net_cash_from_used_in_investing_activities",
-          "net_cash_provided_by_investing_activities",
-          "cash_provided_from_investing_activities",
-          "cash_flows_from_investing_activities",
-          "net_cash_provided_by_used_for_investing_activities",
-          "net_cash_used_for_investing_activities",
-          "net_cash_provided_by_used_in_investing_activities",
-          "net_cash_used_for_provided_by_investing_activities",
-          "net_cash_required_by_investing_activities",
-          "net_cash_used_in_provided_by_investing_activities",
-          "net_cash_flows_provided_by_used_in_investing_activities",
-          "net_cash_provided_used_by_investing_activities",
-          "net_cash_flows_from_investing_activities",
-          "net_cash_used_by_investing_activities"
-        ) ~ "investing_cash_flows",
-      field %in% c(
-        "proceeds_from_shares_issued_under_stock_plans",
-        "proceeds_from_common_stock_offering_net",
-        "proceeds_from_the_issuance_of_common_stock",
-        "proceeds_from_issuance_of_common_stock_net_of_issuance_costs",
-        "proceeds_from_issuance_of_common_stock",
-        "proceeds_from_issuance_of_shares",
-        "issuance_of_common_stock"
-      ) ~ "proceeds_from_issuance_of_basic_shares",
-      field %in% c(
-        "purchases_of_common_stock",
-        "repurchase_of_common_stock",
-        "purchases_of_common_shares",
-        "payments_to_repurchase_common_stock",
-        "purchases_of_shares"
-      ) ~ "repurchases_of_basic_shares",
-      str_detect(field, # REGEX
-                 "^repurchases_of_common_stock.*"
-      ) ~ "repurchases_of_basic_shares",
-      field %in% c(
-      "proceeds_from_issuance_of_long_term_debt",
-      "proceeds_from_borrowings_on_debt",
-      "borrowings_on_long_term_debt",
-      "proceeds_from_borrowings",
-      "proceeds_from_long_term_borrowings",
-      "proceeds_from_notes_payable"
-      ) ~ "proceeds_from_issuance_of_debt",
-      field %in% c(
-        "repayments_on_debt",
-        "payments_to_retire_debt",
-        "payment_of_long_term_debt",
-        "repayments_on_long_term_borrowings",
-        "repayments_of_long_term_borrowings",
-        "principal_payments_on_long_term_debt"
-      ) ~ "repayments_of_debt",
-        field %in% c(
-          "cash_used_in_provided_by_financing_activities",
-          "net_cash_from_used_in_financing_activities",
-          "net_cash_provided_by_financing_activities",
-          "cash_provided_from_used_for_financing_activities",
-          "cash_flows_from_financing_activities",
-          "net_cash_used_in_financing_activities",
-          "net_cash_provided_by_used_for_financing_activities",
-          "net_cash_used_for_financing_activities",
-          "net_cash_provided_by_used_in_financing_activities",
-          "net_cash_used_in_provided_by_financing_activities",
-          "net_cash_used_in_provided_by_financing_activities",
-          "net_cash_flows_provided_by_financing_activities",
-          "net_cash_provided_by_required_by_financing_activities",
-          "net_cash_flows_from_financing_activities",
-          "net_cash_used_for_provided_by_financing_activities",
-          "net_cash_provided_used_by_financing_activities"
-          ) ~ "financing_cash_flows",
-        field %in% c(
-          "consolidated_cash_and_cash_equivalents_end_of_the_period",
-          "cash_and_cash_equivalents",
-          "cash_and_cash_equivalents_and_restricted_cash_at_end_of_period",
-          "cash_and_equivalents_end_of_period",
-          "cash_and_cash_equivalents_as_of_end_of_period",
-          "cash_and_cash_equivalents_at_end_of_period",
-          "cash_and_cash_equivalents_end_of_period",
-          "cash_and_cash_equivalents_end_of_the_quarter",
-          "cash_and_cash_equivalents_end_of_year",
-          "cash_at_end_of_period",
-          "cash_at_end_of_the_period",
-          "cash_cash_equivalents_and_restricted_cash_at_end_of_period",
-          "cash_cash_equivalents_and_restricted_cash_at_the_end_of_period",
-          "cash_and_cash_equivalents_at_end_of_year",
-          "cash_end_of_period",
-          "cash_cash_equivalents_and_restricted_cash_end_of_period",
-          "cash_ending",
-          "cash_and_cash_equivalents_at_end_of_the_period",
-          "cash_and_cash_equivalentsend_of_period",
-          "cash_and_cash_equivalents_ending",
-          "total_cash_cash_equivalents_and_restricted_cash",
-          "cash_end_of_the_period"
-        ) ~ "cash",
-      field %in% c(
-        "decrease_increase_in_cash_and_cash_equivalents",
-        "net_increase_decrease_in_cash_and_cash_equivalents",
-        "net_change_in_cash_and_cash_equivalents",
-        "net_increase_in_cash_and_restricted_cash",
-        "change_in_cash_and_cash_equivalents",
-        "net_increase_decrease_in_cash_cash_equivalents_and_restricted_cash",
-        "net_change_in_cash_and_equivalents",
-        "net_decrease_increase_in_cash_and_cash_equivalents",
-        "net_increase_in_cash_and_cash_equivalents",
-        "increase_decrease_in_cash_and_cash_equivalents",
-        "increase_decrease_in_cash_and_cash_equivalents_including_cash_classified_within_current_assets_held_for_sale",
-        "net_decrease_increase_in_cash_cash_equivalents_and_restricted_cash",
-        "net_change_in_cash_cash_equivalents_and_restricted_cash",
-        "net_change_in_cash",
-        "net_decrease_in_cash_cash_equivalents_and_restricted_cash",
-        "net_increase_decrease_in_cash_and_cash_equivalents_and_restricted_cash",
-        "increase_decrease_in_cash_and_restricted_cash",
-        "net_decrease_in_cash_and_cash_equivalents",
-        "net_increase_in_cash_cash_equivalents_and_restricted_cash",
-        "net_decrease_in_cash",
-        "change_in_cash_cash_equivalents_and_restricted_cash",
-        "net_increase_in_cash_and_cash_equivalents_and_restricted_cash",
-        "net_decrease_increase_in_cash",
-        "net_increase_decrease_in_cash",
-        "net_increase_in_cash",
-        "increase_in_cash_and_cash_equivalents"
-      ) ~ "change_in_cash",
-      field %in% c(
-        "cash_and_cash_equivalents_at_beginning_of_period",
-        "cash_and_cash_equivalents_at_beginning_of_year",
-        "cash_cash_equivalents_and_restricted_cash_at_beginning_of_year",
-        "cash_cash_equivalents_and_restricted_cash_beginning_of_period",
-        "cash_cash_equivalents_and_restricted_cash_at_beginning_of_period",
-        "cash_and_cash_equivalents_beginning_of_period",
-        "cash_and_cash_equivalents_at_the_beginning_of_period",
-        "cash_and_restricted_cash_beginning_of_year",
-        "cash_at_beginning_of_period",
-        "cash_beginning_of_period",
-        "cash_cash_equivalents_and_restricted_cash_at_beginning_of_the_period",
-        "cash_cash_equivalents_and_restricted_cash_at_start_of_period",
-        "cash_beginning_of_the_period"
-      ) ~ "cash_beginning",
-      field %in% c(
-        "effect_of_exchange_rate_changes_on_cash",
-        "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents",
-        "effect_of_currency_exchange_rate_changes_on_cash_cash_equivalents_and_restricted_cash"
-      ) ~ "exchange_rate_effects",
-      str_detect(field, # REGEX
-        "effect(s?)_of_exchange_rate_changes.*"
-      ) ~ "exchange_rate_effects",
-        TRUE ~ field
-      )
-      # field = rename_field_with_prior(
-      #   x = field,
-      #   required_prior_string = "",
-      #   current_string = "",
-      #   replacement = ""
-      # )
-    )
+    ######
+    # df <- cf_files_raw[1] %>% add_download_date() %>% clean_field_names()
+    ######
+    df %>%
+        mutate(
+            field = case_when(
+                field %in% c(
+                    "net_loss",
+                    "net_earnings_loss",
+                    "net_income_loss",
+                    "net_earnings",
+                    "net_loss_income",
+                    "net_loss_for_the_period"
+                ) ~ "net_income",
+                field %in% c(
+                    "depreciation_and_amortization",
+                    "provision_for_depreciation_depletion_and_amortization",
+                    "depreciation_depletion_and_amortization",
+                    "depreciation_amortization_and_accretion",
+                    "depreciation_and_amortization_expense",
+                    "depreciation_and_amortization_of_property_and_equipment",
+                    "amortization_and_depreciation"
+                ) ~ "depreciation_amortization",
+                field %in% c(
+                    "depreciation_expense",
+                    "depreciation_of_property_and_equipment",
+                    "depreciation",
+                    "depreciation_of_premises_and_equipment"
+                ) ~ "depreciation",
+                field %in% c(
+                    "amortization_of_intangible_assets",
+                    "amortization_of_deferred_financing_costs",
+                    "amortization_of_debt_issuance_costs",
+                    "amortization_of_right_of_use_assets",
+                    "amortization_of_intangibles",
+                    "amortization_of_debt_discount_and_issuance_costs",
+                    "amortization_of_operating_lease_right_of_use_assets",
+                    "amortization_of_debt_discount",
+                    "amortization",
+                    "amortization_of_debt_discounts",
+                    "amortization_of_debt_discount_and_debt_issuance_costs",
+                    "amortization_of_core_deposit_intangible",
+                    "amortization_of_debt_issuance_costs_and_debt_discount",
+                    "amortization_of_deferred_loan_costs",
+                    "amortization_expense"
+                ) ~ "amortization",
+                field %in% c(
+                    "share_based_compensation_expense",
+                    "share_based_compensation",
+                    "equity_based_compensation",
+                    "stock_compensation_expense"
+                ) ~ "stock_based_compensation",
+                field %in% c(
+                    "purchases_of_marketable_securities",
+                    "purchases_of_available_for_sale_securities",
+                    "purchases_of_equity_securities",
+                    "purchases_of_investment_securities",
+                    "purchase_of_short_term_investments",
+                    "purchase_of_marketable_securities",
+                    "purchases_of_securities_available_for_sale",
+                    "purchase_of_available_for_sale_securities",
+                    "purchase_of_investments",
+                    "purchase_of_securities_available_for_sale"
+                ) ~ "purchases_of_short_term_investments",
+                field %in% c(
+                    "proceeds_from_sale_of_investments",
+                    "proceeds_from_sales_and_maturities_of_investments",
+                    "maturities_of_short_term_investments",
+                    "proceeds_from_sales_of_securities_available_for_sale",
+                    "proceeds_from_maturities_of_marketable_securities",
+                    "maturities_of_marketable_securities",
+                    "proceeds_from_maturities_of_investments",
+                    "sales_of_marketable_securities"
+                ) ~ "proceeds_from_sales_and_maturities_of_investments",
+                field %in% c(
+                    "taxes_paid",
+                    "cash_paid_for_income_taxes_net_of_refunds",
+                    "cash_paid_during_the_period_for_income_taxes",
+                    "cash_paid_for_income_taxes_net"
+                ) ~ "cash_paid_for_taxes",
+                field %in% c(
+                    "net_cash_used_in_operating_activities",
+                    "net_cash_from_used_in_continuing_operations",
+                    "cash_provided_by_operating_activities",
+                    "net_cash_provided_by_used_in_operating_activities",
+                    "cash_provided_from_used_for_operations",
+                    "cash_flows_from_operating_activities",
+                    "net_cash_provided_by_operating_activities",
+                    "net_cash_provided_by_used_for_operating_activities",
+                    "net_cash_from_operating_activities",
+                    "net_cash_flows_used_in_operations",
+                    "net_cash_used_by_operating_activities",
+                    "net_cash_used_in_provided_by_operating_activities",
+                    "net_cash_flows_from_operating_activities",
+                    "cash_used_in_operating_activities",
+                    "net_cash_provided_used_by_operating_activities",
+                    "net_cash_used_for_operating_activities",
+                    "net_cash_flows_used_in_operating_activities",
+                    "net_cash_used_provided_by_financing_activities",
+                    "cash_provided_by_used_in_operating_activities"
+                ) ~ "operating_cash_flows" ,
+                #   field %in% c(
+                #   ) ~ "",
+                field %in% c(
+                    "investment_in_property_and_equipment",
+                    "purchase_of_property_plant_and_equipment",
+                    "additions_to_property_and_equipment",
+                    "additions_to_investments",
+                    "capital_expenditures",
+                    "acquisitions_of_property_and_equipment",
+                    "purchases_of_property_plant_and_equipment",
+                    "additions_to_property_plant_and_equipment",
+                    "purchases_of_premises_and_equipment",
+                    "acquisition_of_property_and_equipment",
+                    "purchases_of_fixed_assets",
+                    "purchase_of_property_and_equipment",
+                    "payments_for_capital_expenditures",
+                    "expenditures_for_property_plant_and_equipment_and_capitalized_software",
+                    "cash_paid_for_capital_expenditures",
+                    "acquisition_of_property_plant_and_equipment",
+                    "purchase_of_fixed_assets",
+                    "purchase_of_premises_and_equipment",
+                    "purchase_of_equipment",
+                    "purchases_of_equipment",
+                    "expenditures_for_property_plant_and_equipment",
+                    "purchases_of_property_and_equipment_net"
+                ) ~ "purchases_of_property_and_equipment",
+                field %in% c(
+                    "proceeds_from_dispositions_of_property_plant_and_equipment",
+                    "proceeds_from_the_sale_of_assets",
+                    "proceeds_from_sale_of_premises_and_equipment",
+                    "proceeds_from_disposition_of_property_and_other_assets",
+                    "proceeds_from_the_sale_of_property_and_equipment",
+                    "proceeds_from_disposal_of_property_and_equipment",
+                    "proceeds_from_sales_of_premises_and_equipment",
+                    "proceeds_from_sale_of_property_plant_and_equipment",
+                    "proceeds_from_sale_of_property_and_equipment",
+                    "proceeds_from_sale_of_assets",
+                    "proceeds_from_sales_of_property_and_equipment",
+                    "proceeds_from_sale_of_fixed_assets",
+                    "sales_of_property_and_equipment"
+                ) ~ "proceeds_from_sale_of_property_and_equipment",
+                field %in% c(
+                    "net_cash_used_in_investing_activities",
+                    "cash_used_in_investing_activities",
+                    "net_cash_from_used_in_investing_activities",
+                    "net_cash_provided_by_investing_activities",
+                    "cash_provided_from_investing_activities",
+                    "cash_flows_from_investing_activities",
+                    "net_cash_provided_by_used_for_investing_activities",
+                    "net_cash_used_for_investing_activities",
+                    "net_cash_provided_by_used_in_investing_activities",
+                    "net_cash_used_for_provided_by_investing_activities",
+                    "net_cash_required_by_investing_activities",
+                    "net_cash_used_in_provided_by_investing_activities",
+                    "net_cash_flows_provided_by_used_in_investing_activities",
+                    "net_cash_provided_used_by_investing_activities",
+                    "net_cash_flows_from_investing_activities",
+                    "net_cash_used_by_investing_activities",
+                    "net_cash_flows_used_in_investing_activities",
+                    "net_cash_from_investing_activities",
+                    "net_cash_from_investing_activities",
+                    "cash_provided_by_used_in_investing_activities",
+                    "cash_used_for_investing_activities"
+                ) ~ "investing_cash_flows",
+                field %in% c(
+                    "proceeds_from_shares_issued_under_stock_plans",
+                    "proceeds_from_common_stock_offering_net",
+                    "proceeds_from_the_issuance_of_common_stock",
+                    "proceeds_from_issuance_of_common_stock_net_of_issuance_costs",
+                    "proceeds_from_issuance_of_common_stock",
+                    "proceeds_from_issuance_of_shares",
+                    "proceeds_from_sale_of_common_stock",
+                    "issuance_of_common_stock",
+                    "net_proceeds_from_issuance_of_common_stock",
+                    "proceeds_from_issuance_of_common_stock_net"
+                ) ~ "proceeds_from_issuance_of_basic_shares",
+                field %in% c(
+                    "purchases_of_common_stock",
+                    "repurchase_of_common_stock",
+                    "purchases_of_common_shares",
+                    "payments_to_repurchase_common_stock",
+                    "purchases_of_shares",
+                    "purchase_of_treasury_stock",
+                    "common_stock_repurchases",
+                    "common_stock_repurchased",
+                    "acquisition_of_treasury_stock",
+                    "purchases_of_treasury_stock",
+                    "purchase_of_treasury_shares",
+                    "share_repurchases"
+                ) ~ "repurchases_of_basic_shares",
+                str_detect(field, # REGEX
+                           "^repurchases_of_common_stock.*") ~ "repurchases_of_basic_shares",
+                field %in% c(
+                    "proceeds_from_issuance_of_long_term_debt",
+                    "proceeds_from_borrowings_on_debt",
+                    "borrowings_on_long_term_debt",
+                    "proceeds_from_borrowings",
+                    "proceeds_from_long_term_borrowings",
+                    "proceeds_from_notes_payable",
+                    "proceeds_from_long_term_debt",
+                    "borrowings_of_debt",
+                    "proceeds_from_debt"
+                ) ~ "proceeds_from_issuance_of_debt",
+                field %in% c(
+                    "repayments_on_debt",
+                    "payments_to_retire_debt",
+                    "payment_of_long_term_debt",
+                    "repayments_on_long_term_borrowings",
+                    "repayments_of_long_term_borrowings",
+                    "principal_payments_on_long_term_debt",
+                    "payments_of_long_term_debt",
+                    "repayment_of_debt",
+                    "repayment_of_long_term_debt",
+                    "repayments_of_long_term_debt",
+                    "repayment_of_notes_payable",
+                    "payments_on_notes_payable",
+                    "principal_payments_on_finance_lease_obligations",
+                    "payments_on_debt",
+                    "repayments_of_notes_payable",
+                    "principal_payments_on_finance_leases",
+                    "repayments_of_borrowings",
+                    "payments_on_long_term_debt"
+                ) ~ "repayments_of_debt",
+                field %in% c(
+                    "proceeds_from_exercise_of_warrants",
+                    "proceeds_from_the_exercise_of_stock_options",
+                    "proceeds_from_stock_option_exercises",
+                    "proceeds_from_stock_options_exercised"
+                ) ~ "proceeds_from_exercise_of_stock_options",
+                field %in% c(
+                    "cash_dividends_paid",
+                    "cash_dividends_paid_on_common_stock",
+                    "common_stock_dividends_paid",
+                    "cash_dividends",
+                    "cash_dividends_paid",
+                    "payments_of_dividends",
+                    "dividends_paid_on_common_stock",
+                    "dividends_paid",
+                    "dividend_payments",
+                    "payment_of_dividends",
+                    "dividends_paid_to_shareholders"
+                ) ~ "cash_dividends",
+                field %in% c(
+                    "cash_used_in_provided_by_financing_activities",
+                    "net_cash_from_used_in_financing_activities",
+                    "net_cash_provided_by_financing_activities",
+                    "cash_provided_from_used_for_financing_activities",
+                    "cash_flows_from_financing_activities",
+                    "net_cash_used_in_financing_activities",
+                    "net_cash_provided_by_used_for_financing_activities",
+                    "net_cash_used_for_financing_activities",
+                    "net_cash_provided_by_used_in_financing_activities",
+                    "net_cash_used_in_provided_by_financing_activities",
+                    "net_cash_used_in_provided_by_financing_activities",
+                    "net_cash_flows_provided_by_financing_activities",
+                    "net_cash_provided_by_required_by_financing_activities",
+                    "net_cash_flows_from_financing_activities",
+                    "net_cash_used_for_provided_by_financing_activities",
+                    "net_cash_provided_used_by_financing_activities",
+                    "net_cash_from_financing_activities",
+                    "cash_provided_by_financing_activities",
+                    "net_cash_used_by_financing_activities",
+                    "cash_used_in_financing_activities",
+                    "net_cash_flows_used_in_financing_activities"
+                ) ~ "financing_cash_flows",
+                field %in% c(
+                    "consolidated_cash_and_cash_equivalents_end_of_the_period",
+                    "cash_and_cash_equivalents",
+                    "cash_and_cash_equivalents_and_restricted_cash_at_end_of_period",
+                    "cash_and_equivalents_end_of_period",
+                    "cash_and_cash_equivalents_as_of_end_of_period",
+                    "cash_and_cash_equivalents_at_end_of_period",
+                    "cash_and_cash_equivalents_end_of_period",
+                    "cash_and_cash_equivalents_end_of_the_quarter",
+                    "cash_and_cash_equivalents_end_of_year",
+                    "cash_at_end_of_period",
+                    "cash_at_end_of_the_period",
+                    "cash_cash_equivalents_and_restricted_cash_at_end_of_period",
+                    "cash_cash_equivalents_and_restricted_cash_at_the_end_of_period",
+                    "cash_and_cash_equivalents_at_end_of_year",
+                    "cash_end_of_period",
+                    "cash_cash_equivalents_and_restricted_cash_end_of_period",
+                    "cash_ending",
+                    "cash_and_cash_equivalents_at_end_of_the_period",
+                    "cash_and_cash_equivalentsend_of_period",
+                    "cash_and_cash_equivalents_ending",
+                    "total_cash_cash_equivalents_and_restricted_cash",
+                    "cash_end_of_the_period",
+                    "cash_and_cash_equivalents_at_the_end_of_the_period",
+                    "cash_cash_equivalents_restricted_cash_and_restricted_cash_equivalents",
+                    "cash_and_cash_equivalents_and_restricted_cash_end_of_period",
+                    "cash_and_cash_equivalents_at_the_beginning_of_the_period",
+                    "cash_and_restricted_cash_end_of_period",
+                    "cash_cash_equivalents_and_restricted_cash_at_the_end_of_the_period",
+                    "cash_and_restricted_cash_at_end_of_period",
+                    "cash_and_cash_equivalents_end_of_the_period"
+                ) ~ "cash",
+                field %in% c(
+                    "decrease_increase_in_cash_and_cash_equivalents",
+                    "net_increase_decrease_in_cash_and_cash_equivalents",
+                    "net_change_in_cash_and_cash_equivalents",
+                    "net_increase_in_cash_and_restricted_cash",
+                    "change_in_cash_and_cash_equivalents",
+                    "net_increase_decrease_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_change_in_cash_and_equivalents",
+                    "net_decrease_increase_in_cash_and_cash_equivalents",
+                    "net_increase_in_cash_and_cash_equivalents",
+                    "increase_decrease_in_cash_and_cash_equivalents",
+                    "increase_decrease_in_cash_and_cash_equivalents_including_cash_classified_within_current_assets_held_for_sale",
+                    "net_decrease_increase_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_change_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_change_in_cash",
+                    "net_decrease_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_increase_decrease_in_cash_and_cash_equivalents_and_restricted_cash",
+                    "increase_decrease_in_cash_and_restricted_cash",
+                    "net_decrease_in_cash_and_cash_equivalents",
+                    "net_increase_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_decrease_in_cash",
+                    "change_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_increase_in_cash_and_cash_equivalents_and_restricted_cash",
+                    "net_decrease_increase_in_cash",
+                    "net_increase_decrease_in_cash",
+                    "net_increase_in_cash",
+                    "increase_in_cash_and_cash_equivalents",
+                    "increase_decrease_in_cash_cash_equivalents_and_restricted_cash",
+                    "increase_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_decrease_increase_in_cash_and_cash_equivalents_and_restricted_cash",
+                    "decrease_in_cash_and_cash_equivalents",
+                    "net_decrease_in_cash_and_cash_equivalents_and_restricted_cash",
+                    "cash_cash_equivalents_restricted_cash_and_restricted_cash_equivalents_period_increase_decrease_including_exchange_rate_effect",
+                    "net_change_in_cash_and_cash_equivalents_and_restricted_cash",
+                    "net_increase_decrease_in_cash_and_restricted_cash",
+                    "decrease_increase_in_cash_cash_equivalents_and_restricted_cash",
+                    "net_change_in_cash_and_restricted_cash"
+                ) ~ "change_in_cash",
+                field %in% c(
+                    "cash_and_cash_equivalents_at_beginning_of_period",
+                    "cash_and_cash_equivalents_at_beginning_of_year",
+                    "cash_cash_equivalents_and_restricted_cash_at_beginning_of_year",
+                    "cash_cash_equivalents_and_restricted_cash_beginning_of_period",
+                    "cash_cash_equivalents_and_restricted_cash_at_beginning_of_period",
+                    "cash_and_cash_equivalents_beginning_of_period",
+                    "cash_and_cash_equivalents_at_the_beginning_of_period",
+                    "cash_and_restricted_cash_beginning_of_year",
+                    "cash_at_beginning_of_period",
+                    "cash_beginning_of_period",
+                    "cash_cash_equivalents_and_restricted_cash_at_beginning_of_the_period",
+                    "cash_cash_equivalents_and_restricted_cash_at_start_of_period",
+                    "cash_beginning_of_the_period",
+                    "cash_and_cash_equivalents_and_restricted_cash_beginning_of_period",
+                    "cash_and_cash_equivalents_beginning_of_year",
+                    "cash_beginning_of_year",
+                    "cash_and_cash_equivalents_and_restricted_cash_at_beginning_of_period",
+                    "cash_and_cash_equivalents_at_beginning_of_the_period",
+                    "cash_and_cash_equivalents_at_beginning_of_the_year",
+                    "cash_and_restricted_cash_beginning_of_period"
+                ) ~ "cash_beginning",
+                field %in% c(
+                    "effect_of_exchange_rate_changes_on_cash",
+                    "effect_of_exchange_rate_changes_on_cash_and_cash_equivalents",
+                    "effect_of_currency_exchange_rate_changes_on_cash_cash_equivalents_and_restricted_cash",
+                    "effect_of_exchange_rates_on_cash_and_cash_equivalents",
+                    "effect_of_exchange_rate_on_cash",
+                    "effect_of_exchange_rates_on_cash",
+                    "exchange_rate_effects",
+                    "effect_of_foreign_exchange_rate_changes_on_cash_and_cash_equivalents",
+                    "effect_of_foreign_exchange_rate_changes_on_cash_cash_equivalents_and_restricted_cash"
+                ) ~ "exchange_rate_effects_on_cash",
+                str_detect(field, # REGEX
+                           "effect(s?)_of_exchange_rate_changes.*") ~ "exchange_rate_effects_on_cash",
+                TRUE ~ field
+            )
+            # field = rename_field_conditionally(
+            #   x = field,
+            #   required_prior_string = "",
+            #   current_string = "",
+            #   replacement = ""
+            # )
+        )
 }
 
 
@@ -2155,11 +2448,14 @@ fields_cf_to_ignore_5 <- function() {
     "other_current_liabilities",
     "bad_debt_expense",
     "accrued_interest",
+    "unbilled_receivables",
+    "accrued_income_taxes",
     "deferred_income_tax_benefit",
     "deferred_income_tax_expense_benefit",
     "net_increase_in_deposits",
     "other_current_liabilities",
     "bad_debt_expense",
+    "increase_in_cash_surrender_value_of_bank_owned_life_insurance",
     "accrued_interest",
     "other_non_cash_items",
     "accrued_and_other_liabilities",
@@ -2170,16 +2466,105 @@ fields_cf_to_ignore_5 <- function() {
     "loss_on_disposal_of_property_and_equipment",
     "accrued_interest_receivable",
     "customer_deposits",
-    "income_tax_payable"
+    "income_tax_payable",
+    "trade_receivables_net",
+    "provision_for_credit_losses",
+    "accrued_interest_payable",
+    "payment_of_debt_issuance_costs",
+    "provision_for_deferred_income_taxes",
+    "purchase_of_intangible_assets",
+    "taxes_paid_related_to_net_share_settlement_of_equity_awards",
+    "increase_in_other_assets",
+    "deferred_income_taxes_net",
+    "proceeds_from_revolving_credit_facility",
+    "originations_of_loans_held_for_sale",
+    "taxes_paid_related_to_net_share_settlement_of_equity_awards",
+    "deferred_income_tax_expense",
+    "increase_in_accounts_receivable",
+    "prepaid_and_other_assets",
+    "other_operating_activities",
+    "payment_of_offering_costs",
+    "decrease_in_other_liabilities",
+    "deferred_tax_benefit",
+    "decrease_increase_in_other_assets",
+    "net_change_in_loans",
+    "decrease_in_other_assets",
+    "deposits",
+    "mpairment_charges",
+    "interest_receivable",
+    "net_increase_in_loans",
+    "gain_on_sale_of_loans",
+    "increase_decrease_in_accounts_payable_and_accrued_expenses",
+    "increase_in_inventories",
+    "loss_on_debt_extinguishment"
   )
+}
+fields_cf_to_ignore_6 <- function() {
+    c(
+        "deferred_revenues",
+        "other_receivables",
+        "equity_based_compensation_expense",
+        "lease_liability",
+        "unearned_premiums",
+        "prepaid_and_other_current_assets",
+        "net_increase_decrease_in_deposits",
+        "other_long_term_assets",
+        "payments_of_debt_issuance_costs",
+        "impairment_charges",
+        "accretion_of_debt_discount",
+        "increase_decrease_in_prepaid_expenses",
+        "increase_in_accounts_payable_and_accrued_expenses",
+        "other_non_cash_items_net",
+        "right_of_use_assets_obtained_in_exchange_for_new_operating_lease_liabilities",
+        "non_cash_operating_lease_expense",
+        "accounts_and_other_receivables",
+        "accrued_and_other_current_liabilities",
+        "accrued_capital_expenditures",
+        "operating_leases",
+        "purchases",
+        "interest_paid",
+        "loss_on_disposal_of_fixed_assets", 
+        "net_increase_decrease_in_loans", 
+        "offering_costs_paid", 
+        "other_adjustments", 
+        "other_invested_assets",
+        "other_non_cash_adjustments",
+        "earnings_on_bank_owned_life_insurance",
+        "equity_securities",
+        "increase_in_accounts_payable",
+        "increase_in_accrued_interest_receivable",
+        "deferred_income_tax",
+        "deferred_income_tax_benefit_expense",
+        "provision_for_bad_debts",
+        "provision_for_loan_losses", 
+        "provision_for_doubtful_accounts",
+        "taxes",
+        "loss_on_disposal_of_assets",
+        "merchandise_inventories",
+        "net_decrease_increase_in_loans",
+        "change_in_accounts_receivable",
+        "gain_loss_on_sale_of_assets",
+        "allowance_for_doubtful_accounts",
+        "bank_premises_and_equipment",
+        "leased_assets_obtained_in_exchange_for_new_operating_lease_liabilities",
+        "deferred_rent",
+        "available_for_sale",
+        "decrease_increase_in_accounts_receivable",
+        "decrease_increase_in_inventories",
+        "due_to_related_party",
+        "other_accrued_expenses",
+        "other_investments",
+        "other_operating_assets_and_liabilities",
+        "payment_tax_withholding_share_based_payment_arrangement"
+    )
 }
 
 
 field_patterns_cf_to_ignore <- function() {
-  c("^net_change_in_accounts_payable.*|^payments_of_tax_withholding.*|^accounts_receivable|^decrease_in_receivables.*|^decrease_in_prepaid_expenses.*|^decrease_in_taxes.*|^prepaid_expenses.*|^receivable.*|^payment_of_taxes.*|^accounts_payable.*|^change_in_fair_value_of.*|^upfront_costs.*|^income_taxes.*|^investments_in_.*(?=options).*|^accrued_expenses.*|^equity_in_net.*|^net_cash_provided.*(?=continuing_operations).*|^net_cash_provided.*(?=discontinued_operations).*|^income_from_discontinued.*|^trade_accounts_receivable.*|^income_from_unconsolidated.*|^trade_accounts_payable.*|^insurance_claims.*|^accrued_compensation.*|financing_of_energy.*|^floor_plan.*|^change_in_payable.*|^gains_on_disposition.*|^proceeds_from_payroll.*|^imputed_interest.*|^interest_payable.*")
+  c("^net_change_in_accounts_payable.*|^accounts_receivable|^decrease_in_receivables.*|^decrease_in_prepaid_expenses.*|^decrease_in_taxes.*|^prepaid_expenses.*|^receivable.*|^payment_of_taxes.*|^accounts_payable.*|^change_in_fair_value_of.*|^upfront_costs.*|^income_taxes.*|^investments_in_.*(?=options).*|^accrued_expenses.*|^equity_in_net.*|^net_cash_provided.*(?=continuing_operations).*|^net_cash_provided.*(?=discontinued_operations).*|^income_from_discontinued.*|^trade_accounts_receivable.*|^income_from_unconsolidated.*|^trade_accounts_payable.*|^insurance_claims.*|^accrued_compensation.*|financing_of_energy.*|^floor_plan.*|^change_in_payable.*|^gains_on_disposition.*|^imputed_interest.*|^interest_payable.*")
 }
 
-cf_cleaned <- readRDS("cf_cleaned.rds")
+cf_cleaned <- readRDS("cf_cleaned_list.rds")
 if(!exists("cf_cleaned")) {
   cf_cleaned <- map(cf_files_raw, ~add_download_date(.x) %>% clean_field_names())
   tickers_cf <- cf_cleaned %>% map_chr(., ~.x[1, "ticker"] %>% unlist())
@@ -2187,34 +2572,32 @@ if(!exists("cf_cleaned")) {
   saveRDS(cf_cleaned, "cf_cleaned.rds")
 }
 
-map(cf_cleaned[81:90],
-    ~consolidate_cf_field_names(.x) %>%
-      filter(!field %in% fields_cf_to_ignore_1()) %>%
-      filter(!field %in% fields_cf_to_ignore_2()) %>%
-      filter(!field %in% fields_cf_to_ignore_3()) %>%
-      filter(!field %in% fields_cf_to_ignore_4()) %>%
-      filter(!field %in% fields_cf_to_ignore_5()) %>%
-      filter(!str_detect(field, field_patterns_cf_to_ignore())) %>%
-      pull(field))
+map_lgl(cf_cleaned, ~dim(.x) %>% length() %>% {. != 2}) %>% which()
+
+get_cf_cleaned_list <- function(id) {
+    map(
+        cf_cleaned[id],
+        ~ consolidate_cf_field_names(.x) %>%
+        filter(!field %in% fields_cf_to_ignore_1()) %>%
+        filter(!field %in% fields_cf_to_ignore_2()) %>%
+        filter(!field %in% fields_cf_to_ignore_3()) %>%
+        filter(!field %in% fields_cf_to_ignore_4()) %>%
+        filter(!field %in% fields_cf_to_ignore_5()) %>%
+        filter(!field %in% fields_cf_to_ignore_6()) %>%
+        filter(!str_detect(field, field_patterns_cf_to_ignore())) %>% 
+        consolidate_dep_amor() %>% 
+        consolidate_dep() %>% 
+        consolidate_amor())
+}
+
+get_cf_cleaned_list(81:90) %>% map(., ~pull(.x, field))
+
 
 # Common fields
+# Slow !!
 cf_cleaned_list <- readRDS("cf_cleaned_list.rds")
 if(!exists("cf_cleaned_list")) {
-    seq_cf <- 1:length(cf_cleaned)
-    
-    cf_cleaned_list <-
-        map(
-            cf_cleaned[seq_cf],
-            ~ consolidate_cf_field_names(.x) %>%
-                filter(!field %in% fields_cf_to_ignore_1()) %>%
-                filter(!field %in% fields_cf_to_ignore_2()) %>%
-                filter(!field %in% fields_cf_to_ignore_3()) %>%
-                filter(!field %in% fields_cf_to_ignore_4()) %>%
-                filter(!field %in% fields_cf_to_ignore_5()) %>%
-                filter(!str_detect(
-                    field, field_patterns_cf_to_ignore()
-                ))
-        )
+    cf_cleaned_list <- get_cf_cleaned_list(seq_along(cf_cleaned))
     saveRDS(cf_cleaned_list, "cf_cleaned_list.rds")
 }
 
@@ -2222,13 +2605,125 @@ cf_fields_chr <-
     cf_cleaned_list %>% 
     map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
     table() %>% as.data.frame() %>% rename(field = ".", n = "Freq") %>% 
-    arrange(desc(n)) %>% slice(1:60); cf_fields_chr
+    arrange(desc(n))
+cf_fields_chr %>% slice(1:90)
 
-# Find tickers with duplicate fields
-has_dups_cf <- cf_cleaned %>% map_lgl(., ~duplicated(.x$field) %>% any())
-has_dups_cf[has_dups_cf == TRUE] %>% names()
-  
 
+cf_fields_to_keep <-
+    cf_fields_chr %>% mutate(pct = round(n / max(n), 2)) %>% 
+    filter(pct > 0.01) %>% 
+    pull(field) %>% 
+    as.character() %>% #cat(sep = '","')
+    .[!. %in% c(
+        "amortization",
+        "proceeds_from_exercise_of_stock_options",
+        "depreciation",
+        "restricted_cash",  
+        "proceeds_from_sales_and_maturities_of_investments",  
+        "purchases_of_investments",
+        "cash_paid_during_the_period_for_interest",
+        "purchases_of_short_term_investments",
+        "acquisitions_net_of_cash_acquired",
+        "end_of_period"
+    )]
+
+
+cf_cleaned_list_final <-
+    get_cf_cleaned_list(seq_along(cf_cleaned)) %>% 
+    map(~filter(.x, field %in% cf_fields_to_keep))
+
+has_dups_cf <- cf_cleaned_list_final %>% map_lgl(., ~duplicated(.x$field) %>% any())
+cf_tickers_with_dup_fields <- has_dups_cf[has_dups_cf == TRUE] %>% names(); cf_tickers_with_dup_fields
+
+cf_final <-
+    cf_cleaned_list_final %>% 
+    map(~filter(.x, !ticker %in% cf_tickers_with_dup_fields))
+# saveRDS(cf_final, "cf_final.rds")
+
+cf_cleaned_new <- reduce(cf_final, ~suppressMessages(full_join(.x, .y)))
+# fwrite(cf_cleaned_new, "data/cleaned data - new/cf_cleaned_new.csv")
+
+
+cf_new <- 
+    cf_cleaned_new %>% 
+    pivot_longer(-c(ticker, field, download_date),
+                 names_to = "date") %>% 
+    pivot_wider(names_from = "field", values_from = "value") %>% 
+    mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
+    mutate(statement = "1 - cf_new")
+
+
+
+is_cleaned_old <- read_tibble(is_files_cleaned_old %>% min())
+colnames(is_cleaned_old)
+bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% min())
+colnames(bs_cleaned_old)
+cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% min())
+colnames(cf_cleaned_old)
+
+
+cf_old <-
+    cf_cleaned_old %>%
+    rename(
+        operating_cash_flows = "net_cash_provided_by_operating_activities",
+        investing_cash_flows = "net_cash_provided_by_investing_activities",
+        financing_cash_flows = "net_cash_provided_by_financing_activities",
+        cash = "cash_and_cash_equivalents"
+    ) %>% 
+    mutate(statement = "2 - cf_old") %>% 
+    select(any_of(c("ticker", "date", "download_date", "statement", cf_fields_to_keep))) %>%
+    full_join(
+        bs_cleaned_old %>%
+            rename(
+                operating_cash_flows = "net_cash_provided_by_operating_activities",
+                investing_cash_flows = "net_cash_provided_by_investing_activities",
+                financing_cash_flows = "net_cash_provided_by_financing_activities",
+                cash = "cash_and_cash_equivalents"
+            ) %>% 
+            mutate(statement = "4 - bs_old") %>% 
+            select(any_of(c("ticker", "date", "download_date", "statement", cf_fields_to_keep)))
+    ) %>% 
+    full_join(
+        is_cleaned_old %>%
+            rename(
+                operating_cash_flows = "net_cash_provided_by_operating_activities",
+                cash = "cash_and_cash_equivalents"
+            ) %>% 
+            mutate(statement = "3 - is_old") %>% 
+            select(any_of(c("ticker", "date", "download_date", "statement", cf_fields_to_keep)))
+    )
+
+
+# is_old %>% distinct(statement)
+
+colnames(cf_new)
+colnames(cf_old)
+
+cf_combined <- cf_new %>% full_join(cf_old)
+cf_final <-
+    cf_combined %>% 
+    arrange(ticker, desc(date), desc(download_date), statement) %>%
+    group_by(ticker, date) %>% 
+    fill(where(is.numeric), .direction = "up") %>% 
+    slice(1) %>% 
+    select(-statement, -download_date)
+
+cnts <- 
+    cf_final %>% 
+    group_by(ticker, date) %>% 
+    count()
+if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
+
+
+fwrite(cf_final, paste0("data/cleaned data/cash_flows_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
+cf_final <- read_tibble(list.files("data/cleaned data", 
+                                   pattern = "cash_flows_cleaned",
+                                   full.names = TRUE) %>% max())
+
+
+write(jsonlite::toJSON(cf_final), "data/cleaned data/cf_final.json")
+cf_final <- jsonlite::fromJSON("data/cleaned data/cf_final.json") %>% as_tibble()
+# jsonlite::toJSON(cf_final %>% slice(1:20))
 
 
 
@@ -2238,10 +2733,6 @@ consolidate them into one if there isn't' a total
 
 
 !!!! sometimes there are multiple instances of a changed field. Find tickers with duplicate fields to see where the field name changes were innappopriate
-
-
-If there is a depreciation field but no amortization field, then call it depreciation_amortization, and vice-versa
-
 
 sometimes, "end_of_period" or "end_of_the_period" exists and likely represents "cash". If it exists after "financing_cash_flows" and "cash" doesn't' already exist, convert to "cash"
 
@@ -2265,64 +2756,6 @@ sometimes, "end_of_period" or "end_of_the_period" exists and likely represents "
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-get_cleaned_data <- function(files) {
-    map_df(files, add_download_date) %>% 
-        arrange(ticker, date, desc(download_date)) %>% 
-        drop_na(ticker, date, download_date) %>% 
-        group_by(ticker, date) %>% 
-        # The data is sorted with the most recent download_date first.
-        # If the most recent data is missing, pull it from the prior
-        # download dates (fill up)
-        fill(!c(ticker, date, download_date), .direction = "downup") %>% 
-        slice(1) %>% 
-        # filter(!duplicated(ticker, date)) %>% 
-        ungroup()
-}
 
 
 
@@ -2371,22 +2804,6 @@ if(length(basic_id) == 2) {
 
 
 
-
-
-
-
-# Clean data
-is_data <- get_cleaned_data(is_files)
-bs_data <- get_cleaned_data(bs_files)
-cf_data <- get_cleaned_data(cf_files)
-
-# Save
-fwrite(is_data, paste0(dir_proj, "/data/cleaned data/income_statements_cleaned ",
-                       today, ".csv" ))
-fwrite(bs_data, paste0(dir_proj, "/data/cleaned data/balance_sheets_cleaned ",
-                       today, ".csv" ))
-fwrite(cf_data, paste0(dir_proj, "/data/cleaned data/cash_flows_cleaned ",
-                       today, ".csv" ))
 
 
 
