@@ -123,12 +123,14 @@ rename_field_conditionally <- function(x,
                                        current_string = NULL, 
                                        replacement = NULL) {
     #########
-    # x <- bs_files_raw[91] %>% add_download_date() %>% clean_field_names() %>% pull(field)
-    # required_prior_string <- "accounts_payable"
-    # # required_prior_string <- NULL
-    # required_posterior_string <- "total_current_liabilities"
-    # current_string <- "deferred_revenue"
-    # replacement <- "current_deferred_revenue"
+    # x <- bs_cleaned[119] %>% setNames(NULL) %>% .[[1]] %>% pull(field)
+    # required_prior_string <- NULL
+    # required_posterior_string <- NULL
+    # current_string <- NULL 
+    # replacement <- NULL
+    # required_prior_string <- "total_current_liabilities"
+    # current_string <- "operating_lease_liabilities"
+    # replacement <- "long_term_lease_liabilities"
     #########
 
     if(is.null(current_string)) stop("Please provide a current_string!")
@@ -145,20 +147,26 @@ rename_field_conditionally <- function(x,
     id_current_string <- 
         str_detect(x, pattern = paste0("^", current_string, "$")) %>% 
         which() %>% first()
-    if(is.na(id_current_string)) return(x)
+    if(is.na(id_current_string) || length(id_current_string) == 0) return(x)
     
-    if(!is.na(id_prior_field) & !is.na(id_posterior_field) & 
-       (id_current_string > id_prior_field) & 
-       (id_current_string < id_posterior_field)) {
-        x[id_current_string] <- replacement
+    if((length(id_posterior_field) != 0) & (length(id_prior_field) != 0)) {
+      if(!is.na(id_prior_field) & !is.na(id_posterior_field) &
+         (id_current_string > id_prior_field) & 
+         (id_current_string < id_posterior_field)) {
+          x[id_current_string] <- replacement
+      }
     }
-    if(!is.na(id_prior_field) & is.na(id_posterior_field) & 
-       (id_current_string > id_prior_field)) {
-        x[id_current_string] <- replacement
+    if((length(id_prior_field) != 0) & (length(id_posterior_field) != 0)) {
+      if(!is.na(id_prior_field) & is.na(id_posterior_field) & 
+         (id_current_string > id_prior_field)) {
+          x[id_current_string] <- replacement
+      }
     }
-    if(is.na(id_prior_field) & !is.na(id_posterior_field) & 
-       (id_current_string < id_posterior_field)) {
-        x[id_current_string] <- replacement
+    if((length(id_prior_field) != 0) & (length(id_posterior_field) != 0)) {
+      if(is.na(id_prior_field) & !is.na(id_posterior_field) & 
+         (id_current_string < id_posterior_field)) {
+          x[id_current_string] <- replacement
+      }
     }
     return(x)
 }
