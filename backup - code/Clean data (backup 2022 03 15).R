@@ -10,28 +10,17 @@
 
 library(tidyverse)
 library(data.table)
-<<<<<<< HEAD
-=======
 
 conflicted::conflict_prefer_all("dplyr", quiet = TRUE)
 
 # source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
 source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions.R")
 source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions from Fundamentals-Data.R")
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
-source("C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/helper functions.R")
-source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
-source("C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/helper functions from Fundamentals-Data.R")
+conflicted::conflict_prefer_all("dplyr", quiet=TRUE)
 
-# source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions.R")
-# ?? (does this file exist?) source("C:/Users/AaronH/Desktop/Fundamentals-Data/helper functions.R")
-# source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions from Fundamentals-Data.R")
-
-# conflicted::conflict_prefer_all("dplyr", quiet=TRUE)
-
-dir_proj <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data"
-# dir_proj <- "C:/Users/AaronH/Desktop/GraphFundamentals-Data"
+# dir_proj <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data"
+dir_proj <- "C:/Users/AaronH/Desktop/GraphFundamentals-Data"
 
 today <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
 
@@ -46,10 +35,6 @@ cleaned_files_old <-
     list.files(paste0(dir_proj, "/data/cleaned data - old (keep)"), 
                pattern = "income_statement|balance_sheet|cash_flow",
                full.names = TRUE)
-cleaned_files <- 
-  list.files(paste0(dir_proj, "/data/cleaned data"), 
-             pattern = "income_statement|balance_sheet|cash_flow",
-             full.names = TRUE)
 # combined_files <- sort(unique(c(raw_files, cleaned_files)), decreasing = TRUE)
 
 
@@ -66,11 +51,6 @@ cf_files_raw <- raw_files %>% str_subset("cash_flow")
 is_files_cleaned_old <- cleaned_files_old %>% str_subset("income_statement")
 bs_files_cleaned_old <- cleaned_files_old %>% str_subset("balance_sheet")
 cf_files_cleaned_old <- cleaned_files_old %>% str_subset("cash_flow")
-
-is_files_cleaned_old <- cleaned_files_old %>% str_subset("income_statement")
-bs_files_cleaned_old <- cleaned_files_old %>% str_subset("balance_sheet")
-cf_files_cleaned_old <- cleaned_files_old %>% str_subset("cash_flow")
-
 
 # Add download date column
 add_download_date <- function(file_path) {
@@ -155,9 +135,6 @@ clean_field_names <- function(df) {
 }
 
 
-<<<<<<< HEAD
-# INCOME STATEMENT --------------------------------------------------------
-=======
 
 
 # [6] "cash_and_cash_equivalents"
@@ -185,7 +162,6 @@ clean_field_names <- function(df) {
 
 
 # 1. INCOME STATEMENT --------------------------------------------------------
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
 
 consolidate_is_field_names <- function(df) {
@@ -960,7 +936,7 @@ is_fields_chr <-
   map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
   table() %>% as.data.frame() %>% rename(field = ".", n = "Freq") %>% 
   arrange(desc(n))
-# is_fields_chr %>% slice(1:90)
+is_fields_chr %>% slice(1:90)
 
 
 # Find tickers with duplicate fields
@@ -1039,45 +1015,31 @@ is_cleaned_list_final <-
 has_dups_is <- is_cleaned_list_final %>% map_lgl(., ~duplicated(.x$field) %>% any())
 is_tickers_with_dup_fields <- has_dups_is[has_dups_is == TRUE] %>% names(); is_tickers_with_dup_fields
 
-<<<<<<< HEAD
-=======
 is_final <-
     is_cleaned_list_final %>% 
     map(~filter(.x, !ticker %in% is_tickers_with_dup_fields))
 # saveRDS(is_final, "is_final.rds")
 
 is_cleaned_new <- reduce(is_final, ~suppressMessages(full_join(.x, .y)))
-# fwrite(is_cleaned_new, "data/cleaned data - new/is_cleaned_new.csv")
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
+fwrite(is_cleaned_new, "data/cleaned data - new/is_cleaned_new.csv")
 
 is_new <- 
-  is_cleaned_list_final %>% 
-  .[!names(.) %in%  is_tickers_with_dup_fields] %>% 
-  reduce(., ~suppressMessages(full_join(.x, .y))) %>% 
-  pivot_longer(-c(ticker, field, download_date),
-               names_to = "date") %>% 
-  pivot_wider(names_from = "field", values_from = "value") %>% 
-  mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
-  mutate(statement = "1 - is_new")
+    is_cleaned_new %>% 
+    pivot_longer(-c(ticker, field, download_date),
+                 names_to = "date") %>% 
+    pivot_wider(names_from = "field", values_from = "value") %>% 
+    mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
+    mutate(statement = "1 - is_new")
     
 
 
-<<<<<<< HEAD
-is_cleaned_old <- read_tibble(is_files_cleaned_old %>% max())
-bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% max())
-cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% max())
-=======
 is_cleaned_old <- read_tibble(is_files_cleaned_old %>% min())
 colnames(is_cleaned_old)
 bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% min())
 colnames(bs_cleaned_old)
 cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% min())
 colnames(cf_cleaned_old)
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
-# colnames(is_cleaned_old)
-# colnames(bs_cleaned_old)
-# colnames(cf_cleaned_old)
 
 is_old <-
     is_cleaned_old %>%
@@ -1112,23 +1074,19 @@ is_old <-
     )
      
 
-<<<<<<< HEAD
-
-=======
 # is_old %>% distinct(statement)
   
 colnames(is_new)
 colnames(is_old)
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
+is_combined <- is_new %>% full_join(is_old)
 is_final <-
-  is_new %>% 
-  full_join(is_old) %>% 
-  arrange(ticker, desc(date), desc(download_date), statement) %>%
-  group_by(ticker, date) %>% 
-  fill(where(is.numeric), .direction = "up") %>% 
-  slice(1) %>% 
-  select(-statement, -download_date)
+    is_combined %>% 
+    arrange(ticker, desc(date), desc(download_date), statement) %>%
+    group_by(ticker, date) %>% 
+    fill(where(is.numeric), .direction = "up") %>% 
+    slice(1) %>% 
+    select(-statement, -download_date)
 
 cnts <- 
     is_final %>% 
@@ -1137,24 +1095,15 @@ cnts <-
 if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
 
 
-fwrite(is_final, paste0("data/cleaned data/graphfund_income_statements_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
+fwrite(is_final, paste0("data/cleaned data/income_statements_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
 is_final <- read_tibble(list.files("data/cleaned data", 
                                    pattern = "income_statements_cleaned",
                                    full.names = TRUE) %>% max())
 
 
-<<<<<<< HEAD
-
-
-
-
-# write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
-# is_final <- jsonlite::fromJSON("data/cleaned data/is_final.json")
-=======
 write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
 is_final <- jsonlite::fromJSON("data/cleaned data/is_final.json")
 # jsonlite::toJSON(is_final %>% slice(1:20))
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
 
 # cf_cleaned_old %>% 
@@ -1205,15 +1154,10 @@ ticker "ACLS" has basic and diluted followed by basic_shares and diluted_shares
 
 
 
-<<<<<<< HEAD
-# BALANCE SHEET -----------------------------------------------------------
-
-=======
 
 
 
 # 2. BALANCE SHEET --------------------------------------------------------
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
 consolidate_bs_field_names <- function(df) {
     ######
@@ -1290,13 +1234,9 @@ consolidate_bs_field_names <- function(df) {
                     "properties_plants_and_equipment_net",
                     "property_and_equipment_net_of_accumulated_depreciation",
                     "net_property_plant_and_equipment",
-<<<<<<< HEAD
-                    "premises_and_equipment_net"
-=======
                     "premises_and_equipment_net",
                     "fixed_assets_net",
                     "net_property_and_equipment"
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
                 ) ~ "property_plant_equipment_net",
                 str_detect(
                     field,
@@ -1587,6 +1527,7 @@ consolidate_bs_field_names <- function(df) {
         )
 }
 
+
 fields_bs_to_ignore_1 <- function() {
   c("deferred_income_tax_liability_net",
     "other_accrued_liabilities",
@@ -1754,9 +1695,6 @@ fields_bs_to_ignore_3 <- function() {
       "interest_receivable"
     )
 }
-<<<<<<< HEAD
-      
-=======
 fields_bs_to_ignore_4 <- function() {
     c("deferred_tax_liability",
       "other_assets_net",
@@ -1768,7 +1706,6 @@ fields_bs_to_ignore_4 <- function() {
 
 
 
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 field_patterns_bs_to_ignore <- function() {
   c("^common_stock_.*(?=shares_authorized).*(?=shares_issued)|preferred_stock.*(?=shares_authorized).*(?=issued)|other_intangible_assets.*|^total_liabilities_class.*(?=shares).*|^treasury_stock.*|common_stock.*(?=shares_issued).*(?=outstanding).*|common_stock.*(?=par_value).*(outstanding).*|common_shares.*(?=par_value).*(?=authorized).*|^preferred_stock.*(?=authorized).*(?=issued).*|preferred_stock_par.*|common_stock_shares_par.*|income_taxes_payable.*|^common_shares_authorized.*|^preferred_shares_authorized.*|common_shares_shares_issued_in_shares|^common_shares_held_in_treasury.*|^common_shares.*(?=issued).*|^reinsurance.*|preferred_stock_authorized.*|preferred_stock_issued.*|^accrued_interest.*|^deferred_income_taxes.*|preferred_stock_.*_shares_outstanding|^treasury_shares.*|^par_value.*|^accumulated.*income_loss|^preferred_stock.*(?=outstanding)")
 }
@@ -1789,20 +1726,12 @@ get_bs_cleaned_list <- function(id) {
             filter(!field %in% fields_bs_to_ignore_1()) %>%
             filter(!field %in% fields_bs_to_ignore_2()) %>%
             filter(!field %in% fields_bs_to_ignore_3()) %>%
-<<<<<<< HEAD
-=======
             filter(!field %in% fields_bs_to_ignore_4()) %>%
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
             filter(!str_detect(field, field_patterns_bs_to_ignore()))
     )
 }
 
-<<<<<<< HEAD
-
-get_bs_cleaned_list(111:120) %>% map(., ~pull(.x, field))
-=======
 get_bs_cleaned_list(111:120) %>% map(~pull(.x, field))
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
 
 # Common fields
@@ -1812,7 +1741,6 @@ if(!exists("bs_cleaned_list")) {
     saveRDS(bs_cleaned_list, "bs_cleaned_list.rds")
 }
 
-# Get most common fields
 bs_fields_chr <- 
     bs_cleaned_list %>% 
     map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
@@ -1820,53 +1748,6 @@ bs_fields_chr <-
     arrange(desc(n))
 bs_fields_chr %>% slice(1:90)
 
-<<<<<<< HEAD
-bs_fields_to_keep <-
-  bs_fields_chr %>% mutate(pct = round(n / max(n), 2)) %>% 
-  filter(pct > 0.03) %>% 
-  pull(field) %>% 
-  as.character() %>% 
-  .[!. %in% c(
-    "restricted_cash",
-    "short_term_deferred_revenue",
-    "accrued_expenses",
-    "prepaid_expenses",
-    "accumulated_other_comprehensive_income",
-    "accrued_liabilities",
-    "total_deposits",
-    "deferred_tax_assets",
-    "cash_and_due_from_banks",
-    "deferred_tax_liabilities",
-    "common_stock",
-    "intangible_assets",
-    "common_stock_issued_in_shares",
-    "investments",
-    "lease_liabilities",
-    "notes_payable",
-    "long_term_deferred_revenue",
-    "operating_lease_liabilities",
-    "operating_lease_right_of_use_assets_net"
-  )]
-
-bs_cleaned_list_final <-
-  get_bs_cleaned_list(seq_along(bs_cleaned)) %>% 
-  map(~filter(.x, field %in% bs_fields_to_keep))
-
-has_dups_bs <- bs_cleaned_list_final %>% map_lgl(., ~duplicated(.x$field) %>% any())
-bs_tickers_with_dup_fields <- has_dups_bs[has_dups_bs == TRUE] %>% names(); bs_tickers_with_dup_fields
-
-
-bs_new <- 
-  bs_cleaned_list_final %>% 
-  .[!names(.) %in% bs_tickers_with_dup_fields] %>% 
-  reduce(., ~suppressMessages(full_join(.x, .y))) %>% 
-  pivot_longer(-c(ticker, field, download_date),
-               names_to = "date") %>% 
-  pivot_wider(names_from = "field", values_from = "value") %>% 
-  mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
-  mutate(statement = "1 - bs_new")
-
-=======
 
 
 
@@ -1894,10 +1775,10 @@ bs_tickers_with_dup_fields <- has_dups_bs[has_dups_bs == TRUE] %>% names(); bs_t
 bs_final <-
     bs_cleaned_list_final %>% 
     map(~filter(.x, !ticker %in% bs_tickers_with_dup_fields))
-# saveRDS(bs_final, "bs_final.rds")
+saveRDS(bs_final, "bs_final.rds")
 
 bs_cleaned_new <- reduce(bs_final, ~suppressMessages(full_join(.x, .y)))
-# fwrite(bs_cleaned_new, "data/cleaned data - new/bs_cleaned_new.csv")
+fwrite(bs_cleaned_new, "data/cleaned data - new/bs_cleaned_new.csv")
 
 bs_new <- 
     bs_cleaned_new %>% 
@@ -1906,54 +1787,8 @@ bs_new <-
     pivot_wider(names_from = "field", values_from = "value") %>% 
     mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
     mutate(statement = "1 - bs_new")
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
-
-is_cleaned_old <- read_tibble(is_files_cleaned_old %>% max())
-bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% max())
-cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% max())
-
-<<<<<<< HEAD
-# colnames(is_cleaned_old)
-# colnames(bs_cleaned_old)
-# colnames(cf_cleaned_old)
-
-bs_old <-
-  bs_cleaned_old %>%
-  rename(
-    basic_eps = "earnings_per_share_basic",
-    diluted_eps = "earnings_per_share_diluted"
-  ) %>%
-  mutate(statement = "2 - bs_old") %>% 
-  select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep))) %>% 
-  full_join(
-    is_cleaned_old %>% 
-      rename(
-        diluted_eps = "earnings_per_share_diluted"
-      ) %>% 
-      mutate(statement = "3 - is_old") %>% 
-      select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep)))
-  ) %>% 
-  full_join(
-    cf_cleaned_old %>%
-      rename(
-        basic_eps = "earnings_per_share_basic",
-        diluted_eps = "earnings_per_share_diluted"
-      ) %>% 
-      mutate(statement = "4 - cf_old") %>% 
-      select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep)))
-
-  )
 
 
-bs_final <-
-  bs_new %>% 
-  full_join(bs_old) %>% 
-  arrange(ticker, desc(date), desc(download_date), statement) %>%
-  group_by(ticker, date) %>% 
-  fill(where(is.numeric), .direction = "up") %>% 
-  slice(1) %>% 
-  select(-statement, -download_date)
-=======
 is_cleaned_old <- read_tibble(is_files_cleaned_old %>% min())
 colnames(is_cleaned_old)
 bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% min())
@@ -2008,23 +1843,13 @@ cnts <-
     group_by(ticker, date) %>% 
     count()
 if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
-cnts <- 
-  bs_final %>% 
-  group_by(ticker, date) %>% 
-  count()
-if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
 
 fwrite(bs_final, paste0("data/cleaned data/bs_final (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
 bs_final <- read_tibble(list.files("data/cleaned data", 
                                    pattern = "bs_final.*\\.csv",
                                    full.names = TRUE) %>% max())
 
-fwrite(bs_final, paste0("data/cleaned data/graphfund_balance_sheets_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
-bs_final <- read_tibble(list.files("data/cleaned data", 
-                                   pattern = "balance_sheets_cleaned",
-                                   full.names = TRUE) %>% max())
 
 write(jsonlite::toJSON(bs_final), "data/cleaned data/bs_final.json")
 bs_final_json <- jsonlite::fromJSON("data/cleaned data/bs_final.json")
@@ -2443,6 +2268,7 @@ consolidate_cf_field_names <- function(df) {
         )
 }
 
+
 fields_cf_to_ignore_1 <- function() {
   c("cash_paid_for_interest",
     "other_net",
@@ -2746,19 +2572,6 @@ if(!exists("cf_cleaned")) {
   saveRDS(cf_cleaned, "cf_cleaned.rds")
 }
 
-<<<<<<< HEAD
-get_cf_cleaned_list <- function(id) {
-  map(
-    cf_cleaned[id],
-    ~ consolidate_cf_field_names(.x) %>%
-      filter(!field %in% fields_cf_to_ignore_1()) %>%
-      filter(!field %in% fields_cf_to_ignore_2()) %>%
-      filter(!field %in% fields_cf_to_ignore_3()) %>%
-      filter(!field %in% fields_cf_to_ignore_4()) %>%
-      filter(!field %in% fields_cf_to_ignore_5()) %>%
-      filter(!str_detect(field, field_patterns_cf_to_ignore()))
-  )
-=======
 map_lgl(cf_cleaned, ~dim(.x) %>% length() %>% {. != 2}) %>% which()
 
 get_cf_cleaned_list <- function(id) {
@@ -2775,7 +2588,6 @@ get_cf_cleaned_list <- function(id) {
         consolidate_dep_amor() %>% 
         consolidate_dep() %>% 
         consolidate_amor())
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 }
 
 get_cf_cleaned_list(81:90) %>% map(., ~pull(.x, field))
@@ -2783,152 +2595,18 @@ get_cf_cleaned_list(81:90) %>% map(., ~pull(.x, field))
 
 # Common fields
 # Slow !!
-cf_cleaned_list <- readRDS("cf_cleaned_list.rds")
-if(!exists("cf_cleaned_list")) {
+# cf_cleaned_list <- readRDS("cf_cleaned_list.rds")
+# if(!exists("cf_cleaned_list")) {
     cf_cleaned_list <- get_cf_cleaned_list(seq_along(cf_cleaned))
     saveRDS(cf_cleaned_list, "cf_cleaned_list.rds")
-}
+# }
 
 cf_fields_chr <- 
-<<<<<<< HEAD
-  cf_cleaned_list %>% 
-  map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
-  table() %>% as.data.frame() %>% rename(field = ".", n = "Freq") %>% 
-  arrange(desc(n))
-
-  
-
-cf_fields_to_keep <-
-  cf_fields_chr %>% mutate(pct = round(n / max(n), 2)) %>% 
-  filter(pct > 0.03) %>% 
-  pull(field) %>% 
-  as.character() %>% 
-  .[!. %in% c(
-    "amortization",
-    "depreciation",
-    "dividends_paid",
-    "interest_paid",
-    "proceeds_from_exercise_of_stock_options",
-    "restricted_cash",
-    "amortization_of_debt_discount",
-    "purchases_of_marketable_securities",
-    "provision_for_credit_losses"    
-  )]
-
-
-cf_cleaned_list_final <-
-  get_cf_cleaned_list(seq_along(cf_cleaned)) %>% 
-  map(~filter(.x, field %in% cf_fields_to_keep))
-
-has_dups_cf <- cf_cleaned_list_final %>% map_lgl(., ~duplicated(.x$field) %>% any())
-cf_tickers_with_dup_fields <- has_dups_cf[has_dups_cf == TRUE] %>% names(); cf_tickers_with_dup_fields
-
-
-cf_new <- 
-  cf_cleaned_list_final %>% 
-  .[!names(.) %in% cf_tickers_with_dup_fields] %>% 
-  reduce(., ~suppressMessages(full_join(.x, .y))) %>% 
-  pivot_longer(-c(ticker, field, download_date),
-               names_to = "date") %>% 
-  pivot_wider(names_from = "field", values_from = "value") %>% 
-  mutate(date = as.Date(date, "x%Y_%m_%d")) %>% 
-  mutate(statement = "1 - cf_new")
-
-is_cleaned_old <- read_tibble(is_files_cleaned_old %>% max())
-bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% max())
-cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% max())
-
-# colnames(cf_new)
-# colnames(is_cleaned_old)
-# colnames(bs_cleaned_old)
-# colnames(cf_cleaned_old)
-
-
-cf_old <-
-  cf_cleaned_old %>%
-  rename(
-    operating_cash_flows = "net_cash_provided_by_operating_activities",
-    investing_cash_flows = "net_cash_provided_by_investing_activities",
-    financing_cash_flows = "net_cash_provided_by_financing_activities",
-    cash = "cash_and_cash_equivalents",
-    basic_eps = "earnings_per_share_basic",
-    diluted_eps = "earnings_per_share_diluted"
-  ) %>%
-  mutate(statement = "2 - cf_old") %>%
-  select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep))) %>%
-  full_join(
-    is_cleaned_old %>%
-      rename(
-        diluted_eps = "earnings_per_share_diluted"
-      ) %>%
-      mutate(statement = "3 - is_old") %>%
-      select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep)))
-  ) %>%
-  full_join(
-    bs_cleaned_old %>%
-      rename(
-        operating_cash_flows = "net_cash_provided_by_operating_activities",
-        investing_cash_flows = "net_cash_provided_by_investing_activities",
-        financing_cash_flows = "net_cash_provided_by_financing_activities",
-        cash = "cash_and_cash_equivalents",
-        diluted_eps = "earnings_per_share_diluted"
-      ) %>%
-      mutate(statement = "4 - bs_old") %>%
-      select(any_of(c("ticker", "date", "download_date", "statement", bs_fields_to_keep)))
-  )
-
-
-
-cf_final <-
-  cf_new %>% 
-  full_join(cf_old) %>% 
-  arrange(ticker, desc(date), desc(download_date), statement) %>%
-  group_by(ticker, date) %>%
-  fill(where(is.numeric), .direction = "up") %>%
-  slice(1) %>%
-  select(-statement, -download_date)
-
-cnts <-
-  cf_final %>%
-  group_by(ticker, date) %>%
-  count()
-if(nrow(cnts %>% filter(n != 1)) >= 1) stop("Duplicate dates!")
-
-
-fwrite(cf_final, paste0("data/cleaned data/graphfund_cash_flows_cleaned (", str_replace_all(Sys.Date(), "-", " "), ").csv"))
-cf_final <- read_tibble(list.files("data/cleaned data",
-                                   pattern = "cash_flows_cleaned",
-                                   full.names = TRUE) %>% max())
-
-# -------------------------------------------------------------------------
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
     cf_cleaned_list %>% 
     map(~pull(.x, field)) %>% unlist() %>% as.character() %>% 
     table() %>% as.data.frame() %>% rename(field = ".", n = "Freq") %>% 
     arrange(desc(n))
 cf_fields_chr %>% slice(1:90)
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 
 
 cf_fields_to_keep <-
@@ -2962,44 +2640,8 @@ cf_final <-
     map(~filter(.x, !ticker %in% cf_tickers_with_dup_fields))
 # saveRDS(cf_final, "cf_final.rds")
 
-<<<<<<< HEAD
-# -------------------------------------------------------------------------
-
-
-
-
-
-
-
-!!! Sometimes there are multiple depreciation and amortization fields, so
-consolidate them into one if there isn't' a total
-
-
-!!!! sometimes there are multiple instances of a changed field. Find tickers with duplicate fields to see where the field name changes were innappopriate
-
-
-If there is a depreciation field but no amortization field, then call it depreciation_amortization, and vice-versa
-
-
-sometimes, "end_of_period" or "end_of_the_period" exists and likely represents "cash". If it exists after "financing_cash_flows" and "cash" doesn't' already exist, convert to "cash"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
 cf_cleaned_new <- reduce(cf_final, ~suppressMessages(full_join(.x, .y)))
-# fwrite(cf_cleaned_new, "data/cleaned data - new/cf_cleaned_new.csv")
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
+fwrite(cf_cleaned_new, "data/cleaned data - new/cf_cleaned_new.csv")
 
 
 cf_new <- 
@@ -3164,11 +2806,8 @@ if(length(basic_id) == 2) {
 
 
 
-<<<<<<< HEAD
-=======
 
 
->>>>>>> 9bcdde934168b231ad860571c996dd49a79cd637
 # Backup data -------------------------------------------------------------
 
 # Remove old cleaned files
