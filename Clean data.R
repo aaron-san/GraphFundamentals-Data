@@ -3,7 +3,7 @@
 #######################
 # - Add download_date
 # - Reformat dates, numbers, etc.
-# - Combine multiple tickers into big files
+# - Combine all tickers into one file
 
 library(tidyverse)
 library(data.table)
@@ -16,16 +16,13 @@ source("C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/helper fun
 # ?? (does this file exist?) source("C:/Users/AaronH/Desktop/Fundamentals-Data/helper functions.R")
 # source("C:/Users/AaronH/Desktop/GraphFundamentals-Data/helper functions from Fundamentals-Data.R")
 
-# conflicted::conflict_prefer_all("dplyr", quiet=TRUE)
+conflicted::conflict_prefer_all("dplyr", quiet=TRUE)
 
 dir_proj <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data"
 # dir_proj <- "C:/Users/AaronH/Desktop/GraphFundamentals-Data"
 
 today <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
 
-# List files
-#  - Include the most recent cleaned income_statement files (will have many 
-#    duplicates)
 raw_files <- 
     list.files(paste0(dir_proj, "/data/raw data"), 
                pattern = "income_statement|balance_sheet|cash_flow",
@@ -43,13 +40,10 @@ cleaned_files <-
 
 # cleaned_files[1] %>% read_tibble() %>% colnames()
 
-
-# Subset files
 is_files_raw <- raw_files %>% str_subset("income_statement")
 bs_files_raw <- raw_files %>% str_subset("balance_sheet")
 cf_files_raw <- raw_files %>% str_subset("cash_flow")
 
-# Files with already cleaned data
 is_files_cleaned <- cleaned_files %>% str_subset("income_statement")
 bs_files_cleaned <- cleaned_files %>% str_subset("balance_sheet")
 cf_files_cleaned <- cleaned_files %>% str_subset("cash_flow")
@@ -143,9 +137,6 @@ clean_field_names <- function(df) {
 
 
 # INCOME STATEMENT --------------------------------------------------------
-
-
-
 
 consolidate_is_field_names <- function(df) {
     ######
@@ -818,7 +809,6 @@ fields_is_to_ignore_1 <- function() {
         "total_other_expense_net"
     )
 }
-
 fields_is_to_ignore_2 <- function() {
     c(
         "other_net",
@@ -872,21 +862,19 @@ fields_is_to_ignore_2 <- function() {
         )
 }
 
-
-
 # field_patterns_is_to_ignore <- function() {
 #   c("")
 # }
 
-# saveRDS(is_cleaned, "is_cleaned.rds")
 is_cleaned <- readRDS("is_cleaned.rds")
 if(!exists("is_cleaned")) {
   is_cleaned <- map(is_files_raw, ~add_download_date(.x) %>% clean_field_names())
   tickers_is <- is_cleaned %>% map_chr(., ~.x[1, "ticker"] %>% unlist())
   names(is_cleaned) <- tickers_is
+  saveRDS(is_cleaned, "is_cleaned.rds")
 }
 
-map_lgl(is_cleaned, ~dim(.x) %>% length() %>% {. != 2}) %>% which()
+# map_lgl(is_cleaned, ~dim(.x) %>% length() %>% {. != 2}) %>% which()
 
 get_is_cleaned_list <- function(id) {
     map(
@@ -902,7 +890,8 @@ get_is_cleaned_list <- function(id) {
             consolidate_dep() %>% 
             consolidate_amor() %>% 
             consolidate_selling_expense() %>% 
-            consolidate_general_administrative())
+            consolidate_general_administrative()
+        )
 }
 
 get_is_cleaned_list(171:180) %>% map(., ~pull(.x, field))
@@ -923,10 +912,8 @@ is_fields_chr <-
 # is_fields_chr %>% slice(1:90)
 
 
-# Find tickers with duplicate fields
-# has_dups_is <- is_cleaned_list %>% map_lgl(., ~duplicated(.x$field) %>% any())
-# is_tickers_with_dup_fields <- has_dups_is[has_dups_is == TRUE] %>% names()
-# is_tickers_with_dup_fields
+
+# Compare old field names and new field names: ----------------------------
 
 # ticker <- "SHO"
 # ticker_id <- 274
@@ -1017,7 +1004,6 @@ is_new <-
   mutate(statement = "1 - is_new")
     
 
-
 is_cleaned_old <- read_tibble(is_files_cleaned_old %>% max())
 bs_cleaned_old <- read_tibble(bs_files_cleaned_old %>% max())
 cf_cleaned_old <- read_tibble(cf_files_cleaned_old %>% max())
@@ -1035,7 +1021,8 @@ is_old <-
         interest_expense = "net_interest_paid"
     ) %>% 
     mutate(statement = "2 - is_old") %>% 
-    select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep))) %>%
+    select(any_of(c("ticker", "date", "download_date", "statement", 
+                    is_fields_to_keep))) %>%
     full_join(
         bs_cleaned_old %>%
         rename(
@@ -1044,7 +1031,8 @@ is_old <-
             interest_expense = "net_interest_paid"
         ) %>% 
             mutate(statement = "4 - bs_old") %>% 
-            select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep)))
+            select(any_of(c("ticker", "date", "download_date", "statement", 
+                            is_fields_to_keep)))
     ) %>% 
     full_join(
         cf_cleaned_old %>%
@@ -1055,11 +1043,10 @@ is_old <-
             interest_expense = "net_interest_paid"
         ) %>% 
             mutate(statement = "3 - cf_old") %>% 
-            select(any_of(c("ticker", "date", "download_date", "statement", is_fields_to_keep)))
+            select(any_of(c("ticker", "date", "download_date", "statement", 
+                            is_fields_to_keep)))
     )
      
-
-
 
 is_final <-
   is_new %>% 
@@ -1082,32 +1069,22 @@ is_final <- read_tibble(list.files("data/cleaned data",
                                    pattern = "income_statements_cleaned",
                                    full.names = TRUE) %>% max())
 
+# jsonlite::toJSON(is_final %>% slice(1:20))
 write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
 is_final_json <- jsonlite::fromJSON("data/cleaned data/is_final.json")
-# jsonlite::toJSON(is_final %>% slice(1:20))
 
 
 
 
-# write(jsonlite::toJSON(is_final), "data/cleaned data/is_final.json")
-# is_final <- jsonlite::fromJSON("data/cleaned data/is_final.json")
-
-
+# Inspect net_interest_income and net_interest_paid fields:
 # cf_cleaned_old %>% 
 #     select(ticker, date, net_interest_income, net_interest_paid) %>% 
 #     filter(!is.na(net_interest_income) & !is.na(net_interest_paid)) #%>% 
-    # filter(net_interest_income < 0)
-    # mutate(equal = net_interest_income == net_interest_paid) %>% 
-    # filter(equal == TRUE)
+#     filter(net_interest_income < 0)
+#     mutate(equal = net_interest_income == net_interest_paid) %>% 
+#     filter(equal == TRUE)
 
 
-
-
-
-
-Make a rule such that if there is a field with "revenue" or "sales" in the top 3 rows of the table and there are no other fields containing these names, then call it total_revenue, if "total_revenue" and "total" don't' exist in top 3 rows
-
-Test that income_taxes is the right sign. Compute an income_taxes field (income_before_taxes - net_income) and compare.
 
 
 !!!!!!
@@ -1118,6 +1095,15 @@ Test that income_taxes is the right sign. Compute an income_taxes field (income_
         interest_expense, 
         interest_income_net, and 
         interest_expense_net  
+    3. Make a rule such that if there is a field with "revenue" or 
+       "sales" in the top 3 rows of the table and there are no other 
+       fields containing these names, then call it total_revenue, if 
+       "total_revenue" and "total" don't' exist in top 3 rows
+    4. Test that income_taxes is the right sign. Compute an 
+       income_taxes field (income_before_taxes - net_income) and 
+       compare.
+
+
 
 ticker ABIO has duplicated fields: basic_and_diluted (2x)
 
@@ -1838,9 +1824,6 @@ bs_final_json <- jsonlite::fromJSON("data/cleaned data/bs_final.json")
 if total_assets doesn't exist but total liabilieis and equity does, then rename as total_assets'
 
 
-Eventually, remove line items one at a time when it is determined that they are unneeded and continue consolidating names as necessary
-
-
 
 Check if long_term_lease_liabilites is included in long_term_debt or total_debt
 If not, then can choose to addd it later to create adjusted_long_term_debt
@@ -1852,7 +1835,7 @@ If not, then can choose to addd it later to create adjusted_long_term_debt
 
 
 
-# Cash Flows --------------------------------------------------------------
+# CASHH FLOWS --------------------------------------------------------------
 
 consolidate_cf_field_names <- function(df) {
   ######
@@ -2544,8 +2527,8 @@ get_cf_cleaned_list <- function(id) {
       filter(!str_detect(field, field_patterns_cf_to_ignore())) %>% 
       consolidate_dep_amor() %>% 
       consolidate_dep() %>% 
-      consolidate_amor())
-  )
+      consolidate_amor()
+    )
 }
 
 get_cf_cleaned_list(81:90) %>% map(., ~pull(.x, field))
