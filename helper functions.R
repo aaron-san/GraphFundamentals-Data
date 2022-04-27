@@ -1,4 +1,100 @@
 
+library(tidyverse)
+
+first <- dplyr::first
+between <- dplyr::between
+filter <- dplyr::filter
+
+# Add download date column
+add_download_date <- function(file_path) {
+    #####
+    # file_path <- is_files_raw[1]
+    #####    
+    tbl <- read_tibble(file_path)
+    
+    if(!"download_date" %in% colnames(tbl)) {
+        download_date <- file_path %>% 
+            str_extract("(?<=\\()[0-9]{4} [0-9]{1,2} [0-9]{1,2}(?=\\))") %>% 
+            as.Date("%Y %m %d")
+        tbl <- tbl %>%
+            add_column(download_date = download_date)
+    }
+    tbl
+}
+# is_files_raw[1] %>% add_download_date()
+
+
+# Check periodicity
+has_quarterly_dates <- function(data) {
+    dates_are_quarterly <- 
+        data %>% 
+        colnames() %>% 
+        str_subset("x[0-9]{4}_[0-9]{2}_[0-9]{2}") %>% 
+        str_remove_all("^x") %>% 
+        as.Date("%Y_%m_%d") %>% 
+        diff() %>% 
+        abs() %>% 
+        as.numeric() %>% 
+        between(80, 100) %>% 
+        all()
+    return(dates_are_quarterly)
+}
+
+# is_files_raw[1] %>% add_download_date() %>% has_quarterly_dates()
+
+# Analyze field raw names -------------------------------------------------
+get_and_save_field_names <- function(files, what = "is") {
+    #####
+    # files <- is_files_raw[1:5]
+    # what <- "is"
+    #####
+    
+    file_data <- map(files, read_tibble)
+    tickers <- map(file_data, ~.x %>% pull(ticker) %>% unique)
+    fields <- map(file_data, ~.x %>% pull(field))
+    names(fields) <- tickers
+    
+    saveRDS(fields, paste0("data/temp/", what, "_", "fields.rds"))
+}
+
+
+clean_field_names <- function(df) {
+    ######
+    # df <- bs_files_raw[64] %>% add_download_date()
+    ######
+    df %>%
+        mutate(
+            field = field %>% 
+                str_to_lower() %>%
+                str_remove_all("see note [A-Za-z]{1,2}") %>% 
+                str_remove_all("see note \\d{1,2}") %>%
+                str_remove_all("note \\d{1,2}") %>% 
+                str_remove_all("note [A-Za-z]{1,2}") %>% 
+                str_replace_all(" ", "_") %>%
+                str_remove_all("\\([A-Za-z]\\)") %>% 
+                str_replace_all("\\,", "") %>% 
+                str_replace_all("\\(", "_") %>% 
+                str_replace_all("\\)", "_") %>%
+                str_replace_all("\\.", "_") %>%
+                str_replace_all("\\&", "and") %>%
+                str_replace_all("\\-", "_") %>%
+                str_replace_all("\\:", "_") %>%
+                str_replace_all("\\-", "_") %>%
+                str_replace_all("\\/", "_") %>%
+                str_remove_all("_$") %>%
+                str_replace_all("\\$", "_") %>%
+                str_replace_all("\\;", "_") %>%
+                str_remove_all("^_") %>%
+                str_remove_all("\\[") %>%
+                str_remove_all("\\]") %>%
+                str_replace_all("\\'", "_") %>% 
+                str_replace_all("__", "_") %>%
+                str_replace_all("__", "_") %>% 
+                str_replace_all("__", "_") %>% 
+                str_remove_all("_$")
+        )
+}
+
 
 
 
@@ -103,9 +199,9 @@ rename_field_with_prior <- function(x, required_prior_string, current_string, re
     # replacement <- "long_term_lease_liabilities"
     #########
     
-    id_prior_field <- str_detect(x, pattern = paste0("^", required_prior_string, "$")) %>% which() %>% first()
+    id_prior_field <- str_detect(x, pattern = paste0("^", required_prior_string, "$")) %>% which() %>% dplyr::first()
     if(is.na(id_prior_field)) return(x)
-    id_current_string <- str_detect(x, pattern = paste0("^", current_string, "$")) %>% which() %>% first()
+    id_current_string <- str_detect(x, pattern = paste0("^", current_string, "$")) %>% which() %>% dplyr::first()
     if(is.na(id_current_string)) return(x)
     
     
@@ -474,4 +570,114 @@ consolidate_dep <- function(x) {
 
 
 
+get_chrome_driver <- function() {
+    driver <- RSelenium::rsDriver(
+        port = 9468L,
+        browser = "chrome",
+        chromever =
+            "Version 100.0.4896.127 (Official Build) (64-bit)" %>%
+            str_extract("(?<=Version )\\d+\\.\\d+\\.\\d+\\.") %>%
+            str_replace_all("\\.", "\\\\.") %>%
+            paste0("^", .) %>%
+            str_subset(
+                string = binman::list_versions(appname = "chromedriver") %>%
+                    dplyr::last()
+            ) %>%
+            as.numeric_version() %>%
+            max() %>%
+            as.character()
+    )
+    return(driver[["client"]])
+}
 
+
+# Handle modal
+click_modal <- function() {
+    suppressMessages(tryCatch({
+        modal_element <- remote_driver$findElement(using = "xpath",
+                                                   value = '//*[@id="graphFundamentalsModal"]/div[2]/footer/button')
+    },
+    silent = TRUE, error = function(e) {
+    }))
+    
+    if (exists("modal_element")) {
+        modal_element$clickElement()
+    }
+}
+
+# Handle Login
+login <- function(login_details) {
+  
+  email_element <- remote_driver$findElement(using = "xpath",
+                                             value = "/html/body/section/div[2]/div/div/div/form/div[1]/div/input")
+  
+  email_element$sendKeysToElement(list(login_details$email))
+  
+  
+  pw_element <- remote_driver$findElement(using = "xpath",
+                                          value = "/html/body/section/div[2]/div/div/div/form/div[2]/div/input")
+  
+  pw_element$sendKeysToElement(list(login_details$pw))
+  
+  remember_element <- remote_driver$findElement(using = "xpath",
+                                                value = "/html/body/section/div[2]/div/div/div/form/div[3]/label/input")
+  remember_element$clickElement()
+  
+  button_element <- remote_driver$findElement(using = "xpath",
+                                              value = "/html/body/section/div[2]/div/div/div/form/button")
+  button_element$clickElement()
+}
+
+find_element_xpath <- function(driver, value) {
+  driver$findElement(using =  "xpath", 
+                     value = value)
+}
+
+find_element_selector <- function(driver, value) {
+  driver$findElement(using =  "css selector", 
+                     value = value)
+}
+
+#annualFilingFrequencyTabLi
+
+
+
+
+get_profile_data <- function() {
+  
+  # Get company name
+  name_element <- remote_driver$findElement(using = "xpath",
+                                            value = '//*[@id="tableTitle"]')
+  business_name <- name_element$getElementText() %>% .[[1]]
+  
+  # Get SIC industry
+  SIC_element <- find_element_xpath(remote_driver, '//*[@id="sicClassification"]')
+  SIC <- 
+    SIC_element$getElementText() %>% 
+    unlist() %>% 
+    str_extract("(?<=ion\\: ).*")
+  
+  ind_group_element <- find_element_xpath(remote_driver, '//*[@id="industryGroup"]')
+  industry_group <- 
+    ind_group_element$getElementText() %>% 
+    unlist() %>% 
+    str_extract("(?<=Group\\: ).*")
+  
+  industry_element <- find_element_xpath(remote_driver, '//*[@id="industry"]')
+  industry <- 
+    industry_element$getElementText() %>% 
+    unlist() %>% 
+    str_extract("(?<=Industry\\: ).*")
+  
+  sector_element <- find_element_xpath(remote_driver, '//*[@id="division"]')
+  sector <- 
+    sector_element$getElementText() %>% 
+    unlist() %>% 
+    str_extract("(?<=Sector\\: ).*")    
+  
+  return(tibble(business_name = business_name,
+                SIC = SIC,
+                industry_group = industry_group,
+                industry = industry,
+                sector = sector))
+}
