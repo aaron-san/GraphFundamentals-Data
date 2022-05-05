@@ -9,87 +9,30 @@ library(httr)
 
 source("helper functions.R")
 source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
-# 
+
 # library(wdman)
-# library(RSelenium)
+library(RSelenium)
 # selServ <- selenium(jvmargs = c("-Dwebdriver.chrome.verboseLogging=true"))
-# remDr <- remoteDriver(port = 4567L, browserName = "chrome")
+# remDr <- remoteDriver(port = 4567L, browserName = "firefox")
 # remDr$open()
 # selServ$log()
-# 
-# 
-# 
-# library(RSelenium);library("httr");library(wdman)
-# selCommand<-wdman::selenium(jvmargs = c("-Dwebdriver.chrome.verboseLogging=true"),
-#                             retcommand = TRUE)
-# remDr <- remoteDriver(port = 4567L, browserName = "chrome")
-# remDr$open()
-# 
-# # remotes::install_github("ropensci/RSelenium#237")
-# 
-# binman::list_versions("chromedriver")
-# driver <- rsDriver(browser=c("chrome"), 
-#                    chromever="100.0.4896.127")
-# 
-# 
-# RSelenium::rsDriver(browser = "chrome",
-#                     chromever = "latest_compatible")
-# 
-# available.versions <- binman::list_versions("chromedriver") 
-# latest.version <- available.versions$win32[length(available.versions)]
-# rsDriver(chromever = binman::list_versions("chromedriver")$win32[4])
-# rsDriver(chromever = binman::list_versions("chromedriver")$win32[length(available.versions$win32)])
-# 
-# wdman::selenium(port = 4444L,
-#                 check=FALSE, retcommand = TRUE) %>%
-#     system(wait=FALSE, invisible=FALSE)
-# 
-# rmDrv = remoteDriver(extraCapabilities = list(marionette = TRUE),
-#                      browserName="chrome", port = 4444L)
-# rmDrv$open()
-# 
-# rmDrv$navigate("https://www.google.com")
-# 
-# rmDrv$close()
-
-
-
-
-# library(tidyverse)    
-library(RSelenium)
+# remDr$getStatus()
 
 # Get login credentials
 login_details <- read_tibble("private/wsm_pw.csv")
 
 
-# Connect to the FireFox driver
-ff_driver <- rsDriver(browser = "firefox") #, extraCapabilities = cprof)
-remote_driver <- ff_driver[["client"]]
-
-
-# html <- remote_driver$getPageSource()[[1]]
-
-
-
-
-# Navigate to the login page
-remote_driver$navigate("https://wallstreetmillennial.com/login")
-Sys.sleep(3)
-# click_modal()
-# Sys.sleep(3)
-login(login_details = login_details)
-
-
 # https://graphfundamentals.com/graphfundamentals/AAPL/IS#
 
-scrape_fundamentals <- function(ticker, driver) {
+get_fundamentals <- function(driver, ticker) {
     
     # driver <- remote_driver
     
     #####
-    # ticker <- "MSFT"
-    # ticker <- "F"
-    # ticker <- "COP"
+    # ticker <- "AE"
+    # ticker <- "ACGLP"
+    # ticker <- "ACHC"
+    # ticker <- "AAN"
     # ticker <- "SOFI"
     # ticker <- "AAAA"
     # ticker <- "AAC"
@@ -102,331 +45,158 @@ scrape_fundamentals <- function(ticker, driver) {
     base_url <- "https://wallstreetmillennial.com/graphfundamentals?ticker="
     ticker_url <- paste0(base_url, str_to_upper(ticker))
     
-    bs_url <- paste0(ticker_url, "&stmt=BS")
     is_url <- paste0(ticker_url, "&stmt=IS")
+    bs_url <- paste0(ticker_url, "&stmt=BS")
     cf_url <- paste0(ticker_url, "&stmt=CF")
     
-    # install.packages("RSelenium")
     # If the webpage has an error 500 message, return NA
-    if(status_code(GET(bs_url)) == 500) return(NA)
-    if(status_code(GET(is_url)) == 500) return(NA)
-    if(status_code(GET(cf_url)) == 500) return(NA)
+    # is_url_get <- GET(is_url); if(status_code(is_url_get) == 500) return(NA)
+    # bs_url_get <- GET(bs_url); if(status_code(bs_url_get) == 500) return(NA)
+    # cf_url_get <- GET(cf_url); if(status_code(cf_url_get) == 500) return(NA)
+    
+    # driver$setTimeout(type = "page load", milliseconds = 50000)
+    Sys.sleep(3)
     
     
     # Navigate to the ticker's page
     driver$navigate(is_url)
-    driver$setTimeout(type = "page load", milliseconds = 10000)
-    # Sys.sleep(2.5)
+    # driver$setTimeout(type = "page load", milliseconds = 50000)
+    Sys.sleep(3)
     
-    # Get ticker printed on webpage
-    ticker_element <- driver$findElement(using = "xpath",
-                                         value = '//*[@id="tableTitle"]')
-    page_ticker <- 
-        ticker_element$getElementText() %>% 
-        unlist() %>% 
-        str_extract("(?<=\\()[A-Z]+(?=\\))")
+    # Check for invalid ticker message
+    warning_invalid_ticker <- 
+        suppressMessages(try(find_element_selector(driver, '.notification'),
+                             silent = TRUE))
+    
+    invalid_ticker <-
+        suppressMessages(try(warning_invalid_ticker$getElementAttribute('innerHTML')[[1]],
+             silent = TRUE)) %>% 
+        str_detect("Invalid ticker submitted")
+    
+    if(invalid_ticker) return(NA)
     
     
-    if(!exists("page_ticker")) return (NA)
-    if(is.na(page_ticker)) return(NA)
+    # Check that ticker matches url ticker
+    validate_ticker(driver = driver, ticker = ticker)
+
+    save_data <- function(df, ticker, name) {
+        # df <- profile_data
+        # ticker <- "MSFT"
+        # name <- "profile"
+        
+        dir_w <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/data/raw data/"
+        download_date <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
+        
+        dir_w_date <- paste0(dir_w, "/", paste0(str_replace_all(Sys.Date(), "-", " ")))
+        
+        if(!file.exists("dir_w_date")) {
+            dir.create(dir_w_date, showWarnings = FALSE)    
+        }
+        
+        if(!all(is.na(df))) {
+            fwrite(df, 
+                   paste0(dir_w_date, "/", ticker, " - ", name, " ",
+                          download_date, ".csv"))
+        }    
+    }
     
-    # If the loop ticker doesn't equal the ticker on the webpage, return NA
-    #  The webpage sometimes forwards to AAPL's page if the ticker link 
-    #  isn't available, without raising an error
-    if(ticker != page_ticker) return(NA)
     
-    #########################
     # Get profile data
-    #########################
-    # profile_data <- get_profile_data()
-    
-    get_profile_data <- function(driver) {
-        
-        # driver <- remote_driver
-        
-        driver$navigate(is_url)
-        
-        # Get company name
-        name_element <- driver$findElement(using = "xpath",
-                                                  value = '//*[@id="tableTitle"]')
-        business_name <- name_element$getElementText() %>% .[[1]]
-        
-        # Get SIC industry
-        SIC_element <- find_element_xpath(driver, '//*[@id="sicClassification"]')
-        SIC <- 
-            SIC_element$getElementText() %>% 
-            unlist() %>% 
-            str_extract("(?<=ion\\: ).*")
-        
-        ind_group_element <- find_element_xpath(driver, '//*[@id="industryGroup"]')
-        industry_group <- 
-            ind_group_element$getElementText() %>% 
-            unlist() %>% 
-            str_extract("(?<=Group\\: ).*")
-        
-        industry_element <- find_element_xpath(driver, '//*[@id="industry"]')
-        industry <- 
-            industry_element$getElementText() %>% 
-            unlist() %>% 
-            str_extract("(?<=Industry\\: ).*")
-        
-        sector_element <- find_element_xpath(driver, '//*[@id="division"]')
-        sector <- 
-            sector_element$getElementText() %>% 
-            unlist() %>% 
-            str_extract("(?<=Sector\\: ).*")    
-        
-        return(tibble(business_name = business_name,
-                      SIC = SIC,
-                      industry_group = industry_group,
-                      industry = industry,
-                      sector = sector))
-    }
-    
-    profile_data <- get_profile_data(driver = driver)
-
-    
-    get_table_data <- function(driver, statement, period) {
-        
-        # driver <- remote_driver
-        # statement <- "income_statement"
-        # period <- "quarterly"
-        
-        driver$navigate(is_url)
-        
-        statement_xpath <- switch(statement,
-                                  "income_statement" = '/html/body/section/div[2]/div[1]/div/div[1]/div/aside/ul/li[1]/a',
-                                  "balance_sheet" = '/html/body/section/div[2]/div[1]/div/div[1]/div/aside/ul/li[2]/a',
-                                  "cash_flows" = '/html/body/section/div[2]/div[1]/div/div[1]/div/aside/ul/li[3]/a')
-        
-        period_selector <- switch(period,
-                             "quarterly" = '#quarterlyFilingFrequencyTabLi',
-                             "yearly" = '#annualFilingFrequencyTabLi')
-        
-        is_link_element <- find_element_xpath(driver, statement_xpath)
-        Sys.sleep(1)
-        is_link_element$clickElement()
-
-        # Function to get current url and see if corresponds to "statement" input
-        
-        validate_url <- function(driver) {
-        
-            # driver <- remote_driver
-            
-            driver$setTimeout(type = "page load", milliseconds = 10000)
-            stmt <- switch(statement,
-                           "income_statement" = "IS",
-                           "balance_sheet" = "BS",
-                           "cash_flows" = "CF")
-        
-            current_url <- driver$getCurrentUrl()
-            if(!current_url %>% str_detect(paste0("\\=", stmt))) {
-                print("URL problem")
-                return(NA)
-            }
-        }
-        
-        validate_url(driver = driver)
-        
-        
-        link_element <- find_element_selector(driver = driver, period_selector)
-        Sys.sleep(3)
-        link_element$clickElement()
-        Sys.sleep(2.5)
-        table_element <- find_element_selector(driver, '.table-container')
-        
-        table_data <-
-            table_element$getElementAttribute('innerHTML')[[1]] %>% 
-            read_html() %>%
-            html_table() %>% .[[1]]
-        
-        
-        # Check dates
-        validate_dates <- function(df, statement, period) {
-            
-            # df <- table_data
-            # statement <- statement
-            # period <- "quarterly"
-            
-            date_diffs_q <- colnames(df) %>% 
-                .[2:length(.)] %>% 
-                as.Date() %>% diff() %>% as.integer() %>% 
-                abs()
-            
-            if(statement %in% c("income_statement", "cash_flows")) {
-                if(period == 'quarterly') {
-                    if(!mean(dplyr::between(date_diffs_q, 80, 100)) > 0.8) {
-                        print("quarterly dates not correct")
-                        return(NA)
-                    }
-                } else
-                    
-                    if(period == 'yearly') {
-                        if(!mean(dplyr::between(date_diffs_q, 360, 370)) > 0.8) {
-                            print("yearly dates not correct")
-                            return(NA)
-                        }
-                    }    
-            }    
-        }
-
-        # If the data contains all NAs, return NA
-        if(table_data %>% is.na() %>% all()) {
-            print("Table has all NAs")
-            return(NA)
-        }
-        
-        return(table_data)
-    }
+    profile_data <- get_profile_data(driver = driver, url = is_url)
+    # Save
+    save_data(df = profile_data, ticker = ticker, name = "profile")
     
     is_quarterly <- get_table_data(
         driver = driver,
+        url = is_url,
         statement = "income_statement",
         period = "quarterly")
+    is_quarterly_cleaned <- clean_df(is_quarterly, ticker = ticker)
+    
+    # Save
+    save_data(df = is_quarterly_cleaned, ticker = ticker, name = "income_statement_quarterly")
     
     is_yearly <- get_table_data(
         driver = driver,
+        url = is_url,
         statement = "income_statement",
         period = "yearly")
+    is_yearly_cleaned <- clean_df(is_yearly, ticker = ticker)
+    
+    # Save
+    save_data(df = is_yearly_cleaned, ticker = ticker, name = "income_statement_yearly")
     
     bs_quarterly <- get_table_data(
         driver = driver,
+        url = bs_url,
         statement = "balance_sheet",
         period = "quarterly"
     )
+    bs_quarterly_cleaned <- clean_df(bs_quarterly, ticker = ticker)
+    
+    # Save
+    save_data(df = bs_quarterly_cleaned, ticker = ticker, name = "balance_sheet_quarterly")
     
     bs_yearly <- get_table_data(
         driver = driver,
+        url = bs_url,
         statement = "balance_sheet",
         period = "yearly"
     )
+    bs_yearly_cleaned <- clean_df(bs_yearly, ticker = ticker)
+    
+    # Save
+    save_data(df = bs_yearly_cleaned, ticker = ticker, name = "balance_sheet_yearly")
         
     cf_quarterly <- get_table_data(
         driver = driver,
+        url = cf_url,
         statement = "cash_flows",
         period = "quarterly"
     )
+    cf_quarterly_cleaned <- clean_df(cf_quarterly, ticker = ticker)
+    
+    # Save
+    save_data(df = cf_quarterly_cleaned, ticker = ticker, name = "cash_flows_quarterly")
     
     cf_yearly <- get_table_data(
         driver = driver,
+        url = cf_url,
         statement = "cash_flows",
         period = "yearly"
     )
-        
-
-    # if(bs_tibble %>% nrow() == 0 | bs_tibble %>% ncol() <= 2) {
-    #     bs_df <- NA 
-    # } else {
-        
-    clean_df <- function(df) {
-        
-        # df <- is_quarterly
+    cf_yearly_cleaned <- clean_df(cf_yearly, ticker = ticker)
     
-        if(all(is.na(df))) return(NA)
-            
-        df %>% 
-            janitor::clean_names() %>% 
-            janitor::remove_empty(which = "cols") %>% 
-            rename(field = fields) %>% 
-            mutate(across(-field, ~str_remove_all(.x, ","))) %>%
-            mutate(across(-field, as.numeric)) %>% 
-            add_column(ticker = ticker) %>%
-            select(ticker = ticker, field, everything())
-    }
-    
-    is_quarterly_cleaned <- clean_df(is_quarterly)
-    is_yearly_cleaned <- clean_df(is_yearly)
-    bs_quarterly_cleaned <- clean_df(bs_quarterly)
-    bs_yearly_cleaned <- clean_df(bs_yearly)
-    cf_quarterly_cleaned <- clean_df(cf_quarterly)
-    cf_yearly_cleaned <- clean_df(cf_yearly)
-            
-            
-
-    return(list(is_quarterly = is_quarterly_cleaned,
-                is_yearly = is_yearly_cleaned,
-                bs_quarterly = bs_quarterly_cleaned,
-                bs_yearly = bs_yearly_cleaned,
-                cf_quarterly = cf_quarterly_cleaned,
-                cf_yearly = cf_yearly_cleaned,
-                profile = profile_data))
+    # Save
+    save_data(df = cf_yearly_cleaned, ticker = ticker, name = "cash_flows_yearly")
 }
 
+# Connect to remote server
+# remote_driver <- get_remote_driver()
+# prepare_webpage(driver = remote_driver)
 
-ticker_data <- scrape_fundamentals(driver = remote_driver, ticker = "MSFT")
-
-
-# scrape_fundamentals(ticker = "GM")
-# scrape_fundamentals(ticker = "DLTR")
-# scrape_fundamentals(ticker = "COP")
+# get_fundamentals(driver = remote_driver, ticker = "GM")
 
 
-save_fundamentals <- function(tickers) {
-    #####
-    # tickers <- "HDdfd"
-    # tickers <- "SOHU"
-    #####
-    
-    dir_w <- "C:/Users/user/Desktop/Aaron/R/Projects/GraphFundamentals-Data/data/raw data/"
-    download_date <- paste0("(", str_replace_all(Sys.Date(), "-", " "), ")")
-    
-    for(ticker in tickers) {
-        
-        #####
-        # ticker <- "SOHU"
-        #####
-        print(ticker)
-        
-        ticker_data <- scrape_fundamentals(ticker)
-        
-        if(!is.na(ticker_data)) {
-            
-            if(!is.na(ticker_data$profile)) {
-                fwrite(ticker_data$profile, 
-                       paste0(dir_w, ticker, " - profile ", 
-                              download_date, ".csv"))
-            }
-            
-            if(!is.na(ticker_data$is_quarterly_cleaned)) {
-                fwrite(ticker_data$is_quarterly_cleaned, 
-                       paste0(dir_w, ticker, " - income_statement_quarterly ", 
-                              download_date, ".csv"))
-            }
-            
-            if(!is.na(ticker_data$is_yearly_cleaned)) {
-                fwrite(ticker_data$is_yearly_cleaned, 
-                       paste0(dir_w, ticker, " - income_statement_yearly ", 
-                              download_date, ".csv"))
-            }
-            
-            if(!is.na(ticker_data$bs_quarterly_cleaned)) {
-                fwrite(ticker_data$bs_quarterly_cleaned, 
-                       paste0(dir_w, ticker, " - balance_sheet_quarterly ", 
-                              download_date, ".csv"))
-            }
-            
-            if(!is.na(ticker_data$bs_yearly_cleaned)) {
-                fwrite(ticker_data$bs_yearly_cleaned, 
-                       paste0(dir_w, ticker, " - balance_sheet_yearly ", 
-                              download_date, ".csv"))
-            }
-            
-            if(!is.na(ticker_data$cf_quarterly_cleaned)) {
-                fwrite(ticker_data$cf_quarterly_cleaned, 
-                       paste0(dir_w, ticker, " - cash_flow_quarterly ", 
-                              download_date, ".csv"))
-            }
-            
-            if(!is.na(ticker_data$cf_yearly_cleaned)) {
-                fwrite(ticker_data$cf_yearly_cleaned,
-                       paste0(dir_w, ticker, " - cash_flow_yearly ", 
-                              download_date, ".csv"))
-            }
-            
-            Sys.sleep(1)
-        }
-    }
-}
+
+
+
+# remove("ticker_data_1")
+# ticker_data_1 <- scrape_fundamentals(driver = remote_driver, ticker = "MSFT")
+# ticker_data_2 <- scrape_fundamentals(driver = remote_driver, ticker = "GM")
+# ticker_data_3 <- scrape_fundamentals(driver = remote_driver, ticker = "GE")
+# ticker_data_4 <- scrape_fundamentals(driver = remote_driver, ticker = "LTCM")
+# ticker_data_5 <- scrape_fundamentals(driver = remote_driver, ticker = "DLTR")
+# ticker_data_6 <- scrape_fundamentals(driver = remote_driver, ticker = "COP")
+
+
+
+
+
+
+
+
+
 
 
 
@@ -453,9 +223,12 @@ tickers_in_files <-
 length(tickers_in_files) / length(tickers_with_clean_prices)
 
 
-download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL) {
+download_fundamentals <- function(ff_driver, start_id=NULL, start_ticker=NULL, tickers=NULL) {
     #######
+    # driver <- remote_driver
+    # ff_driver <- ff_driver
     # start_ticker <- NULL #"CCL"
+    # start_ticker <- "AE"
     # start_id <- 1 # NULL
     # tickers <- tickers_with_clean_prices
     #######
@@ -469,26 +242,64 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
     
     if(!is.null(start_ticker)) {
         start_ticker <- paste0("^", start_ticker, "$")
-        start_id <- tickers_with_clean_prices %>% str_which(start_ticker)
+        start_id <- tickers %>% str_which(start_ticker)
     }
 
+    driver <- ff_driver[["client"]]
+    
     # Download fundamentals
     # for(i in seq_along(start)) {
-    for(i in start_id:length(tickers_with_clean_prices)) {
+    for(i in start_id:length(tickers)) {
+        
+        print(tickers[i])
+        
+        # If disconnected, reconnect to remote server
+        # ff_driver$server$stop()
+        server_status <- tryCatch(
+            ff_driver$server$process$get_status(),
+            error = function(e) {
+                ff_driver <- get_driver()
+                remote_driver <- ff_driver[["client"]]
+                prepare_webpage(driver = remote_driver)
+                driver <- remote_driver    
+            })
+        
         # i <- 1
-        save_fundamentals(tickers = tickers_with_clean_prices[i])
+        get_fundamentals(driver = driver, ticker = tickers[i])
+        
         # print(paste0(start[i], "-", end[i], " done!"))
     }
 }
 
 
+
 # DOWNLOAD ----------------------------------------------------------------
 
-# download_fundamentals(start_id = 1,
-#                       # start_ticker = "VLDR",
-#                       tickers = tickers_in_files)
+
+# Connect to remote server
+ff_driver <- get_driver()
+# ff_driver$server$process
+# ff_driver$server$stop()
+remote_driver <- ff_driver[["client"]]
+prepare_webpage(driver = remote_driver)
+
+download_fundamentals(ff_driver = ff_driver,
+                      # start_id = 1,
+                      start_ticker = "AEP",
+                      tickers = tickers_in_files)
 
 
+
+# BAD!!!!!!!!!!!!!!!!!
+ADXN
+
+- Can run multiple docker containers simultaneously?
+- Docker containers have unique IP addresses?
+
+
+
+
+# ------------------------------------------------------------------------- #
 #Include the parallel library. If the next line does not work, run install.packages(“parallel”) first
 library(parallel)
 
