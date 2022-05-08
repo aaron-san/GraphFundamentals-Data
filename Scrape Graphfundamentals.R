@@ -10,13 +10,8 @@ library(httr)
 source("helper functions.R")
 source("C:/Users/user/Desktop/Aaron/R/Projects/Fundamentals-Data/helper functions.R")
 
-# library(wdman)
+
 library(RSelenium)
-# selServ <- selenium(jvmargs = c("-Dwebdriver.chrome.verboseLogging=true"))
-# remDr <- remoteDriver(port = 4567L, browserName = "firefox")
-# remDr$open()
-# selServ$log()
-# remDr$getStatus()
 
 # Get login credentials
 login_details <- read_tibble("private/wsm_pw.csv")
@@ -29,16 +24,8 @@ get_fundamentals <- function(driver, ticker) {
     # driver <- remote_driver
     
     #####
-    # ticker <- "AE"
-    # ticker <- "ACGLP"
-    # ticker <- "ACHC"
-    # ticker <- "AAN"
-    # ticker <- "SOFI"
-    # ticker <- "AAAA"
-    # ticker <- "AAC"
-    # ticker <- "AACQ"
-    # ticker <- "AAON"
-    # ticker <- "SOHU"
+    # ticker <- "AGBE"
+    # ticker <- "F"
     # ticker <- "sdfddsfd"
     #####
     
@@ -57,7 +44,6 @@ get_fundamentals <- function(driver, ticker) {
     # driver$setTimeout(type = "page load", milliseconds = 50000)
     Sys.sleep(3)
     
-    
     # Navigate to the ticker's page
     driver$navigate(is_url)
     # driver$setTimeout(type = "page load", milliseconds = 50000)
@@ -65,8 +51,7 @@ get_fundamentals <- function(driver, ticker) {
     
     # Check for invalid ticker message
     warning_invalid_ticker <- 
-        suppressMessages(try(find_element_selector(driver, '.notification'),
-                             silent = TRUE))
+        suppressMessages(find_element_xpath_quietly(driver, '/html/body/section/div[2]/div[1]/div[1]'))
     
     invalid_ticker <-
         suppressMessages(try(warning_invalid_ticker$getElementAttribute('innerHTML')[[1]],
@@ -172,8 +157,9 @@ get_fundamentals <- function(driver, ticker) {
 }
 
 # Connect to remote server
-# remote_driver <- get_remote_driver()
-# prepare_webpage(driver = remote_driver)
+# ff_driver <- get_driver()
+# remote_driver <- ff_driver[["client"]]
+# prepare_webpage(driver = remote_driver, login_details = login_details)
 
 # get_fundamentals(driver = remote_driver, ticker = "GM")
 
@@ -188,15 +174,6 @@ get_fundamentals <- function(driver, ticker) {
 # ticker_data_4 <- scrape_fundamentals(driver = remote_driver, ticker = "LTCM")
 # ticker_data_5 <- scrape_fundamentals(driver = remote_driver, ticker = "DLTR")
 # ticker_data_6 <- scrape_fundamentals(driver = remote_driver, ticker = "COP")
-
-
-
-
-
-
-
-
-
 
 
 
@@ -223,7 +200,18 @@ tickers_in_files <-
 length(tickers_in_files) / length(tickers_with_clean_prices)
 
 
-download_fundamentals <- function(ff_driver, start_id=NULL, start_ticker=NULL, tickers=NULL) {
+
+
+# DOWNLOAD ----------------------------------------------------------------
+
+
+# tickers = c("NFLX", "OXY", "CROX",
+#             "HD", "LVS", "SOFI",
+#             "TROW", "BTCM", "GME",
+#             "GE"))
+
+download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL,
+                                  login_details) {
     #######
     # driver <- remote_driver
     # ff_driver <- ff_driver
@@ -233,7 +221,7 @@ download_fundamentals <- function(ff_driver, start_id=NULL, start_ticker=NULL, t
     # tickers <- tickers_with_clean_prices
     #######
     
-    if(is.null(tickers)) 
+    if(is.null(tickers))
         stop("Provide vector of tickers")
     if(is.null(start_id) & is.null(start_ticker))
         stop("Provide a start_id or start_ticker")
@@ -245,58 +233,54 @@ download_fundamentals <- function(ff_driver, start_id=NULL, start_ticker=NULL, t
         start_id <- tickers %>% str_which(start_ticker)
     }
 
-    driver <- ff_driver[["client"]]
+    if(is.null(start_ticker)) 
+        start_id <- 1
     
-    # Download fundamentals
-    # for(i in seq_along(start)) {
+    
     for(i in start_id:length(tickers)) {
         
-        print(tickers[i])
+        # i <- 7
+        # tickers <- tickers_in_files
+        print(paste(i, "-", tickers[i]))
+        if(i %% 5 == 1) {
+            # Connect to remote server
+            ff_driver <- get_driver()
+            
+            driver <- ff_driver[["client"]]
+            
+            prepare_webpage(driver = driver, login_details = login_details)    
+        }
         
-        # If disconnected, reconnect to remote server
-        # ff_driver$server$stop()
-        server_status <- tryCatch(
-            ff_driver$server$process$get_status(),
-            error = function(e) {
-                ff_driver <- get_driver()
-                remote_driver <- ff_driver[["client"]]
-                prepare_webpage(driver = remote_driver)
-                driver <- remote_driver    
-            })
-        
-        # i <- 1
         get_fundamentals(driver = driver, ticker = tickers[i])
         
-        # print(paste0(start[i], "-", end[i], " done!"))
+        if(i %% 5 == 0) {
+            # Close remote server and close browser instances
+            ff_driver$client$quit()[[1]]
+        }
+        
+        Sys.sleep(round(runif(1, 3, 5)))
     }
 }
 
 
-
-# DOWNLOAD ----------------------------------------------------------------
-
-
-# Connect to remote server
-ff_driver <- get_driver()
-# ff_driver$server$process
-# ff_driver$server$stop()
-remote_driver <- ff_driver[["client"]]
-prepare_webpage(driver = remote_driver)
-
-download_fundamentals(ff_driver = ff_driver,
-                      # start_id = 1,
-                      start_ticker = "AEP",
-                      tickers = tickers_in_files)
-
+download_fundamentals(start_id = NULL, 
+                      start_ticker = "AACQ", 
+                      tickers = tickers_in_files, 
+                      login_details = login_details)
+    
 
 
 # BAD!!!!!!!!!!!!!!!!!
 ADXN
-
 - Can run multiple docker containers simultaneously?
 - Docker containers have unique IP addresses?
 
 
+    
+    
+    
+    
+    
 
 
 # ------------------------------------------------------------------------- #

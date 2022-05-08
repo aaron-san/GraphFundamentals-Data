@@ -34,7 +34,7 @@ get_driver <- function() {
 
 # html <- remote_driver$getPageSource()[[1]]
 
-prepare_webpage <- function(driver) {
+prepare_webpage <- function(driver, login_details) {
     
     # driver <- remote_driver
     # Navigate to the login page
@@ -737,14 +737,25 @@ login <- function(driver, login_details) {
 }
 
 find_element_xpath <- function(driver, value) {
+    Sys.sleep(2)
     driver$findElement(using =  "xpath",
                        value = value)
 }
 
+find_element_xpath_quietly <- possibly(find_element_xpath, 
+                                       otherwise = NULL,
+                                       quiet = TRUE)
+
 find_element_selector <- function(driver, value) {
+    Sys.sleep(2)
     driver$findElement(using =  "css selector",
                        value = value)
 }
+
+find_element_selector_quietly <- possibly(find_element_selector,
+                                          otherwise = NULL,
+                                          quiet = TRUE)
+
 
 validate_ticker <- function(driver, ticker) {
     # Get ticker printed on webpage
@@ -841,7 +852,7 @@ get_table_data <- function(driver, url, statement, period) {
         
         # driver <- remote_driver
         
-        driver$setTimeout(type = "page load", milliseconds = 10000)
+        Sys.sleep(3)
         stmt <- switch(statement,
                        "income_statement" = "IS",
                        "balance_sheet" = "BS",
@@ -852,7 +863,7 @@ get_table_data <- function(driver, url, statement, period) {
             print("URL problem")
             return(NA)
         }
-    }
+    } 
     
     validate_url(driver = driver)
     
