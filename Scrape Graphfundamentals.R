@@ -24,7 +24,7 @@ get_fundamentals <- function(driver, ticker) {
     # driver <- remote_driver
     
     #####
-    # ticker <- "AGBE"
+    # ticker <- "ABST"
     # ticker <- "F"
     # ticker <- "sdfddsfd"
     #####
@@ -46,6 +46,16 @@ get_fundamentals <- function(driver, ticker) {
     
     # Navigate to the ticker's page
     driver$navigate(is_url)
+    
+    
+    if(tryCatch(read_html(ticker_url), 
+             error = function(e) return("HTTP Error")) == "HTTP Error") {
+        print("HTTP Error")
+        return(NA)    
+    }
+        
+
+    
     # driver$setTimeout(type = "page load", milliseconds = 50000)
     Sys.sleep(3)
     
@@ -156,6 +166,10 @@ get_fundamentals <- function(driver, ticker) {
     save_data(df = cf_yearly_cleaned, ticker = ticker, name = "cash_flows_yearly")
 }
 
+
+# Close remote server and close browser instances
+# ff_driver$client$quit()
+
 # Connect to remote server
 # ff_driver <- get_driver()
 # remote_driver <- ff_driver[["client"]]
@@ -217,7 +231,7 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
     # ff_driver <- ff_driver
     # start_ticker <- NULL #"CCL"
     # start_ticker <- "AE"
-    # start_id <- 1 # NULL
+    # start_id <- 14 # NULL
     # tickers <- tickers_with_clean_prices
     #######
     
@@ -233,8 +247,18 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
         start_id <- tickers %>% str_which(start_ticker)
     }
 
-    if(is.null(start_ticker)) 
-        start_id <- 1
+    # if(is.null(start_ticker)) 
+    #     start_id <- 1
+    
+    if(exists("ff_driver"))
+        ff_driver$client$quit()
+    
+    # Connect to remote server
+    ff_driver <- get_driver()
+    
+    driver <- ff_driver[["client"]]
+    
+    prepare_webpage(driver = driver, login_details = login_details)    
     
     
     for(i in start_id:length(tickers)) {
@@ -242,7 +266,7 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
         # i <- 7
         # tickers <- tickers_in_files
         print(paste(i, "-", tickers[i]))
-        if(i %% 5 == 1) {
+        if(i %% 4 == 1) {
             # Connect to remote server
             ff_driver <- get_driver()
             
@@ -251,11 +275,15 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
             prepare_webpage(driver = driver, login_details = login_details)    
         }
         
-        get_fundamentals(driver = driver, ticker = tickers[i])
+        suppressMessages(tryCatch(
+            get_fundamentals(driver = driver, ticker = tickers[i]),
+            error = function(e)
+                print("Error", e)
+        ))
         
-        if(i %% 5 == 0) {
+        if(i %% 4 == 0) {
             # Close remote server and close browser instances
-            ff_driver$client$quit()[[1]]
+            ff_driver$client$quit()
         }
         
         Sys.sleep(round(runif(1, 3, 5)))
@@ -263,17 +291,24 @@ download_fundamentals <- function(start_id=NULL, start_ticker=NULL, tickers=NULL
 }
 
 
-download_fundamentals(start_id = NULL, 
-                      start_ticker = "AACQ", 
-                      tickers = tickers_in_files, 
+
+
+download_fundamentals(start_id = 48,
+                      # start_ticker = "AACQ",
+                      tickers = tickers_in_files,
                       login_details = login_details)
-    
+
+
+
+
+
 
 
 # BAD!!!!!!!!!!!!!!!!!
-ADXN
-- Can run multiple docker containers simultaneously?
-- Docker containers have unique IP addresses?
+
+
+# - Can run multiple docker containers simultaneously?
+# - Docker containers have unique IP addresses?
 
 
     
@@ -285,32 +320,32 @@ ADXN
 
 # ------------------------------------------------------------------------- #
 #Include the parallel library. If the next line does not work, run install.packages(“parallel”) first
-library(parallel)
-
-# Use the detectCores() function to find the number of cores in system
-no_cores <- detectCores()
-
-# Setup cluster
-clust <- makeCluster(no_cores - 1) #This line will take time
-
-#Setting a base variable 
-# base <- 4
-#Note that this line is required so that all cores in cluster have this variable available
-clusterExport(clust, c("save_fundamentals", "str_replace_all",
-                       "scrape_fundamentals", "str_to_upper",
-                       "status_code", "GET", "read_html",
-                       "%>%", "str_extract", "html_text",
-                       "html_elements", "html_table",
-                       "as_tibble", "flatten", "select",
-                       "add_column", "mutate", "rename",
-                       "str_remove_all", "fwrite"))
-
-# parLapply(clust, 1:5, function(x) c(x^2,x^3))
-parLapply(clust, tickers_with_clean_prices,
-          function(x) save_fundamentals(tickers = x))
-
-# 7,548 files (2022-02-17)
-
-stopCluster(clust)
+# library(parallel)
+# 
+# # Use the detectCores() function to find the number of cores in system
+# no_cores <- detectCores()
+# 
+# # Setup cluster
+# clust <- makeCluster(no_cores - 1) #This line will take time
+# 
+# #Setting a base variable 
+# # base <- 4
+# #Note that this line is required so that all cores in cluster have this variable available
+# clusterExport(clust, c("save_fundamentals", "str_replace_all",
+#                        "scrape_fundamentals", "str_to_upper",
+#                        "status_code", "GET", "read_html",
+#                        "%>%", "str_extract", "html_text",
+#                        "html_elements", "html_table",
+#                        "as_tibble", "flatten", "select",
+#                        "add_column", "mutate", "rename",
+#                        "str_remove_all", "fwrite"))
+# 
+# # parLapply(clust, 1:5, function(x) c(x^2,x^3))
+# parLapply(clust, tickers_with_clean_prices,
+#           function(x) save_fundamentals(tickers = x))
+# 
+# # 7,548 files (2022-02-17)
+# 
+# stopCluster(clust)
 
 

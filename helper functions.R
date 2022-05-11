@@ -714,25 +714,27 @@ click_modal <- function(driver) {
 
 # Handle Login
 login <- function(driver, login_details) {
+    
+    
     # driver <- remote_driver
     
-    email_element <- driver$findElement(using = "xpath",
-                                        value = "/html/body/section/div[2]/div/div/div/form/div[1]/div/input")
+    email_element <- driver$findElement(using = "css selector",
+                                        value = "html body.hero.is-fullheight div.hero-body.background-beach-2 div.container.has-text-centered div.column.is-4.is-offset-4 div.box.has-background-grey-lighter form div.field div.control input.input.has-background-white")
     
     email_element$sendKeysToElement(list(login_details$email))
     
     
-    pw_element <- driver$findElement(using = "xpath",
-                                     value = "/html/body/section/div[2]/div/div/div/form/div[2]/div/input")
+    pw_element <- driver$findElement(using = "css selector",
+                                     value = "div.field:nth-child(2) > div:nth-child(1) > input:nth-child(1)")
     
     pw_element$sendKeysToElement(list(login_details$pw))
     
-    remember_element <- driver$findElement(using = "xpath",
-                                           value = "/html/body/section/div[2]/div/div/div/form/div[3]/label/input")
+    remember_element <- driver$findElement(using = "css selector",
+                                           value = ".checkbox > input:nth-child(1)")
     remember_element$clickElement()
     
-    button_element <- driver$findElement(using = "xpath",
-                                         value = "/html/body/section/div[2]/div/div/div/form/button")
+    button_element <- driver$findElement(using = "css selector",
+                                         value = ".button")
     button_element$clickElement()
 }
 
@@ -827,23 +829,23 @@ get_profile_data <- function(driver, url) {
 
 get_table_data <- function(driver, url, statement, period) {
     
-    # driver <- remote_driver
+    # driver <- driver
     # statement <- "income_statement"
     # period <- "quarterly"
     # url <- is_url
     
     driver$navigate(url)
     
-    statement_xpath <- switch(statement,
-                              "income_statement" = '/html/body/section/div[2]/div[1]/div/div[1]/div/aside/ul/li[1]/a',
-                              "balance_sheet" = '/html/body/section/div[2]/div[1]/div/div[1]/div/aside/ul/li[2]/a',
-                              "cash_flows" = '/html/body/section/div[2]/div[1]/div/div[1]/div/aside/ul/li[3]/a')
+    statement_selector <- switch(statement,
+                              "income_statement" = 'ul.menu-list:nth-child(4) > li:nth-child(1) > a:nth-child(1)',
+                              "balance_sheet" = 'ul.menu-list:nth-child(4) > li:nth-child(2) > a:nth-child(1)',
+                              "cash_flows" = 'ul.menu-list:nth-child(4) > li:nth-child(3) > a:nth-child(1)')
     
     period_selector <- switch(period,
                               "quarterly" = '#quarterlyFilingFrequencyTabLi',
                               "yearly" = '#annualFilingFrequencyTabLi')
     
-    is_link_element <- find_element_xpath(driver, statement_xpath)
+    is_link_element <- find_element_selector(driver, statement_selector)
     Sys.sleep(1)
     is_link_element$clickElement()
     
